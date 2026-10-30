@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Build Log</title>
+<meta name="description" content="An open build log: every AI project I run on one laptop, what worked, what broke, what I changed.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a case-file wall. Hero, the rig, five-step sequence, level switch, filterable episode files, vote chips. Same pitch-green / seam-red scorebook look as the Ops Room page. */
+:root {
+  --paper:#f4f7f5; --card:#fff; --ink:#12231c; --muted:#5b6b64; --line:#d3ddd7;
+  --pitch:#1b6b49; --pitch-soft:#dcefe6; --seam:#c4382b; --amber:#a56a00; --grid:rgba(27,107,73,.07);
+  --f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0d1713; --card:#14211b; --ink:#e8f0ec; --muted:#9bb0a6; --line:#26382f;
+    --pitch:#3fb985; --pitch-soft:#173a2b; --seam:#ff6b5b; --amber:#e0a43a; --grid:rgba(63,185,133,.08);
+    color-scheme: dark;
+  }
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; background:var(--paper); color:var(--ink); font:400 17px/1.55 var(--f-body);
+  padding:0 max(16px, env(safe-area-inset-right)) 72px max(16px, env(safe-area-inset-left));
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+.wrap { max-width:880px; margin:0 auto; }
+h1,h2,h3 { font-family:var(--f-display); text-wrap:balance; line-height:1.1; margin:0; }
+h1 { font-size:clamp(2.3rem,7vw,4rem); font-weight:800; letter-spacing:-.02em; }
+h2 { font-size:clamp(1.5rem,4.2vw,2.1rem); font-weight:700; }
+h3 { font-size:1.1rem; font-weight:700; }
+p { margin:0; }
+a { color:var(--pitch); }
+.eyebrow { font:500 .78rem var(--f-mono); letter-spacing:.12em; text-transform:uppercase; color:var(--pitch); }
+.hero { padding-top:56px; display:grid; gap:18px; }
+.lead { font-size:1.2rem; max-width:60ch; color:var(--muted); }
+section { margin-top:64px; display:grid; gap:16px; }
+.intro { max-width:62ch; color:var(--muted); }
+.panel { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:clamp(14px,3vw,24px); min-width:0; }
+button { font:inherit; }
+button:focus-visible, summary:focus-visible { outline:3px solid var(--pitch); outline-offset:2px; }
+
+/* the rig */
+.specs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.spec { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 14px; }
+.spec span { font:500 .7rem var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.spec b { display:block; font:500 1.25rem var(--f-mono); margin-top:2px; }
+.spec small { color:var(--muted); font-size:.85rem; }
+.meter { height:10px; border-radius:999px; background:var(--paper); border:1px solid var(--line); overflow:hidden; margin-top:8px; }
+.meter i { display:block; height:100%; background:var(--amber); width:73%; }
+.stack { display:flex; flex-wrap:wrap; gap:8px; }
+.stack button { font:500 .85rem var(--f-mono); background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:8px 14px; cursor:pointer; }
+.stack button[aria-pressed=true] { border-color:var(--pitch); background:var(--pitch-soft); }
+#stackText { min-height:3.4em; }
+
+/* sequence */
+.seq { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; padding:0; margin:0; list-style:none; }
+.seq button { width:100%; height:100%; text-align:left; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:12px; cursor:pointer; display:grid; gap:4px; }
+.seq button b { font:500 1.4rem var(--f-mono); color:var(--pitch); }
+.seq button span { font-weight:600; }
+.seq button[aria-pressed=true] { border-color:var(--pitch); background:var(--pitch-soft); }
+#seqText { min-height:3.2em; }
+
+/* controls */
+.bar { display:flex; flex-wrap:wrap; gap:12px 20px; align-items:center; }
+.seg { display:inline-flex; flex-wrap:wrap; border:1px solid var(--line); border-radius:999px; overflow:hidden; background:var(--card); }
+.seg button { font:500 .82rem var(--f-mono); border:0; background:transparent; color:var(--muted); padding:8px 14px; cursor:pointer; }
+.seg button[aria-pressed=true] { background:var(--pitch); color:#fff; }
+.lbl { font:500 .75rem var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+
+/* episodes */
+.files { display:grid; gap:12px; }
+details.ep { background:var(--card); border:1px solid var(--line); border-radius:14px; }
+details.ep[open] { border-color:var(--pitch); }
+details.ep summary { list-style:none; cursor:pointer; display:grid; grid-template-columns:52px 1fr auto; gap:12px; align-items:center; padding:14px 16px; }
+details.ep summary::-webkit-details-marker { display:none; }
+.num { font:500 1.5rem var(--f-mono); color:var(--pitch); }
+.t b { display:block; font-family:var(--f-display); font-size:1.12rem; }
+.t span { color:var(--muted); font-size:.95rem; }
+.tag { font:500 .68rem var(--f-mono); border:1px solid var(--line); border-radius:999px; padding:2px 9px; color:var(--muted); white-space:nowrap; }
+.tag.done { border-color:var(--pitch); color:var(--pitch); }
+.body { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:4px 16px 16px; }
+.body > div { border-top:3px solid var(--pitch); padding-top:8px; }
+.body > div.bad { border-color:var(--seam); }
+.body > div.adapt { border-color:var(--amber); }
+.body h4 { margin:0 0 4px; font:500 .76rem var(--f-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+.body .wide { grid-column:1/-1; }
+.challenge { background:var(--pitch-soft); border-radius:10px; padding:12px 14px; border-top:0 !important; }
+.challenge label { display:flex; gap:10px; align-items:flex-start; margin-top:8px; cursor:pointer; font-size:.95rem; }
+.challenge input { margin-top:5px; accent-color:var(--pitch); width:18px; height:18px; flex:none; }
+#score { font:500 1.1rem var(--f-mono); }
+
+/* vote */
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { font:500 .85rem var(--f-mono); background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:8px 14px; cursor:pointer; }
+.chip:hover { border-color:var(--pitch); background:var(--pitch-soft); }
+#copied { min-height:1.5em; font:500 .85rem var(--f-mono); color:var(--pitch); }
+footer { margin-top:64px; padding-top:18px; border-top:1px solid var(--line); color:var(--muted); font-size:.9rem; }
+@media (max-width:720px) {
+  .specs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .seq { grid-template-columns:minmax(0,1fr); }
+  .body { grid-template-columns:minmax(0,1fr); }
+  details.ep summary { grid-template-columns:40px 1fr; }
+  details.ep summary .tag { grid-column:2; justify-self:start; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <p class="eyebrow">The Build Log · Season 1</p>
+  <h1>Everything I've built with AI. Including what broke.</h1>
+  <p class="lead">I went to the Africa AI Expo and came home buzzing. Everyone was talking about what AI could do. I wanted to show what it actually does on one ordinary laptop, over months, with real failures. One project at a time. Open the files, tick off the challenges, build your own.</p>
+  <p><a href="index.html">First, the one-page tour: The Laptop Ops Room &rarr;</a></p>
+</header>
+
+<section aria-labelledby="h-rig">
+  <h2 id="h-rig">The rig</h2>
+  <p class="intro">No cloud servers, no GPU. This is the whole machine. If it runs here, it runs on yours.</p>
+  <div class="specs">
+    <div class="spec"><span>Machine</span><b>HP EliteBook 820 G4</b><small>2017 business laptop</small></div>
+    <div class="spec"><span>Processor</span><b>Core i5-7300U</b><small>2 cores, 2.6 GHz</small></div>
+    <div class="spec"><span>Memory</span><b>16 GB</b><small>2133 MHz, 15.9 GB usable</small></div>
+    <div class="spec"><span>Graphics</span><b>Intel HD 620</b><small>128 MB, no dedicated GPU</small></div>
+    <div class="spec" style="grid-column:1/-1"><span>Storage · 238 GB Intel SSD</span><b>174 GB used, 64 GB free</b>
+      <div class="meter" role="img" aria-label="73 percent of the disk is used"><i></i></div>
+      <small>73% full. It's an honest constraint, and the reason the system cleans up after itself.</small></div>
+  </div>
+  <p class="intro" style="margin-top:6px">The software stack. Tap one to see its job.</p>
+  <div class="stack" id="stack"></div>
+  <p id="stackText" class="panel" aria-live="polite"></p>
+</section>
+
+<section aria-labelledby="h-seq">
+  <h2 id="h-seq">How every episode runs</h2>
+  <p class="intro">The same five steps, borrowed from how the expo hit me: spark, inventory, break, adapt, level up. Tap a step.</p>
+  <ol class="seq" id="seq"></ol>
+  <p id="seqText" class="panel" aria-live="polite"></p>
+</section>
+
+<section aria-labelledby="h-eps">
+  <h2 id="h-eps">The case files</h2>
+  <p class="intro">Pick your level first. Every file ends with a challenge sized for you.</p>
+  <div class="bar">
+    <div><span class="lbl">Your level</span><br>
+      <div class="seg" id="level" role="group" aria-label="Your level"></div></div>
+    <div><span class="lbl">Show</span><br>
+      <div class="seg" id="theme" role="group" aria-label="Filter by theme"></div></div>
+  </div>
+  <p id="score" aria-live="polite"></p>
+  <div class="files" id="files"></div>
+</section>
+
+<section aria-labelledby="h-vote">
+  <h2 id="h-vote">Vote for the next deep-dive</h2>
+  <p class="intro">Tap a chip. It copies a comment. Paste it under the LinkedIn post. Most votes goes next.</p>
+  <div class="chips" id="vote"></div>
+  <p id="copied" aria-live="polite"></p>
+</section>
+
+<footer>Muhammad Mayet · CA(SA) · Johannesburg. Teams, players and personal details are left out on purpose. Numbers come from my own logs. Nothing here is advice.</footer>
+</div>
+
+<script>
+(function () {
+  var STEPS = [
+    ["Spark", "What made me want to build it. Usually one annoying problem, not a grand plan."],
+    ["Inventory", "What the thing is and how it works, in plain words. Small enough to copy."],
+    ["Break", "What went wrong. Real errors, real dead ends. This is where the learning is."],
+    ["Adapt", "What I changed, and the rule I now follow because of it."],
+    ["Level up", "A challenge for you at three sizes. Do one, then tell me how it went."]
+  ];
+  var STACK = [
+    ["Windows 10 Pro", "The host. A scheduled task starts the runner and a second one keeps it alive."],
+    ["Python 3.13", "All the tools are small Python programs. Easy to read, easy to change."],
+    ["SQLite", "One file holds the job queue and the inbox. No database server to run."],
+    ["Ollama", "Small local AI models for free, private work. They run on the CPU, so they are slow but cost nothing."],
+    ["Claude", "The strong model for the hard parts: building, analysis, review. Used sparingly."],
+    ["ntfy", "A free push service. How the laptop talks to my phone."],
+    ["Tailscale", "A private network so I can reach the laptop dashboard from my phone without opening it to the internet."],
+    ["GitHub + Pages", "Code lives in git. Small public tools and this page are hosted free."],
+    ["ffmpeg", "Resizes and prepares videos before they go out."]
+  ];
+  var LEVELS = ["Curious", "Builder", "Operator"];
+  var EPS = [
+    { n: 1, theme: "Automate", title: "The night shift", sub: "A task runner that works while I sleep", done: true,
+      what: "A small Python app on Windows. A scheduled task wakes it, it pulls jobs from a SQLite queue and runs them. Heavy work is kept to midnight–5 am so the laptop is free in the day.",
+      right: "Jobs survive restarts because the queue lives in the database, not in memory. A 5-minute health check watches the whole thing.",
+      wrong: "A short internet drop marked whole tools as failed and paused them. Nothing was broken. The jobs were just unlucky.",
+      adapt: "Failures are now sorted into temporary (network, rate limit, server error) and permanent. Temporary ones retry. Permanent ones ask me.",
+      lesson: "Decide what a failure means before it happens.",
+      ch: ["Write down three things you do every week. Circle the one that is boring and has clear steps.", "Schedule one script to run nightly with Task Scheduler or cron. Log each run to a file.", "Add a queue table and a retry rule that separates temporary from permanent errors."] },
+    { n: 2, theme: "Reliability", title: "One inbox", sub: "Why my system asks me one question, once", done: true,
+      what: "A 'Secretary' that collects anything needing a human decision, so I see one list instead of messages everywhere.",
+      right: "Low-risk items are handled on their own. I only see decisions.",
+      wrong: "The same question was raised again and again until I had 64 open requests, most of them copies.",
+      adapt: "Requests now have a key. A repeat updates the existing one instead of creating a new one. I fixed it at the source, not by cleaning the list.",
+      lesson: "Clean the tap, not the bucket.",
+      ch: ["Count how many places you check for 'things waiting on me'. Aim to halve it.", "Make a single note or sheet that is the only place decisions get written.", "Give every request a stable key and write an upsert so duplicates merge."] },
+    { n: 3, theme: "Automate", title: "Control it from my phone", sub: "A free push channel and a few commands", done: true,
+      what: "Commands like /status and /waiting reach the laptop through ntfy, a free push service, and replies come back to my phone.",
+      right: "It costs nothing and works from anywhere.",
+      wrong: "My first choice, Telegram, asked me to pay. Later the push service rate-limited me (HTTP 429) and the tools stopped.",
+      adapt: "Switched to ntfy. A 429 now counts as 'try later', not 'broken'. Secrets stay in a private .env file and never in chat, logs or commits.",
+      lesson: "A free constraint often forces a simpler design.",
+      ch: ["Install ntfy on your phone and send yourself a test message from a browser.", "Make a script that pushes 'done' to your phone when a long job ends.", "Add a reply topic and two commands your laptop answers. Add a 'pause' switch."] },
+    { n: 4, theme: "Data", title: "The cricket analyst", sub: "Roughly 100,000 balls, 513 matches, one plan per opponent", done: true,
+      what: "Ball-by-ball data from public scorecards, turned into phase run rates (overs 1–5, 6–14, 15–20), recent form against two-year form, and how each side loses wickets.",
+      right: "Opponents become a short list: the one number that matters and a plan with ball and bat.",
+      wrong: "One long chat burned 96% of my weekly AI usage. Also, scraped dates came out one day early, which I only caught by checking against known results.",
+      adapt: "Cache first: fetch a match once, save it, and let the AI read the saved file. Totals are reconciled to the official score. Dates were corrected and checked.",
+      lesson: "Never pay twice for the same data. Always reconcile to a number you trust.",
+      ch: ["Pick a sport or hobby with public stats. Write the one question you wish you could answer.", "Download one season to a CSV and answer your question with a pivot table.", "Build a cache so data is fetched once, then add a reconciliation check against official totals."] },
+    { n: 5, theme: "Reliability", title: "The alarm that cried wolf", sub: "Why I alarm on free memory, not used memory", done: true,
+      what: "A health guard that checks the laptop every five minutes: memory, disk, jobs, and whether the runner is alive.",
+      right: "Problems reach my phone before I notice them.",
+      wrong: "My first memory alarm fired all day because Windows is meant to use spare memory as cache. 'High usage' was normal.",
+      adapt: "The alarm now triggers on free memory below 1.5 GB. It only speaks when action is needed.",
+      lesson: "Measure first, then choose the threshold.",
+      ch: ["Open Task Manager and write down your normal memory and disk numbers for a day.", "Write a script that logs free memory every 5 minutes for a week. Look at the graph.", "Pick a threshold from that data, add the alarm, then check how many false alarms it gave."] },
+    { n: 6, theme: "Content", title: "The content queue", sub: "Videos that wait for my 'go'", done: true,
+      what: "A folder of finished videos with captions. The system prepares them and stops. It posts only after I reply 'go'.",
+      right: "Nothing public happens without me. Review takes about a minute.",
+      wrong: "Two captions were silently not saved while the page was still processing, so those videos went up with filenames as captions. File size limits also needed a re-encode with ffmpeg.",
+      adapt: "Always re-read the result after posting. Captions are now checked on the page before the final click.",
+      lesson: "Automate the work. Keep the human at the gate. Then verify.",
+      ch: ["Plan one week of posts in a notes app. Write all captions before recording.", "Create a queue folder and a checklist you run before posting each item.", "Script the prep (resize, caption file, size check) and add an approval step."] },
+    { n: 7, theme: "Reliability", title: "Tests that know Windows", sub: "The bug that only exists on my laptop", done: true,
+      what: "Automated tests (pytest) and a linter run on every change.",
+      right: "Most bugs are caught before they reach the nightly run.",
+      wrong: "A test failed only on Windows: a file saved as UTF-8 was read with the system's default encoding (cp1252). Another test failed only on certain dates.",
+      adapt: "Every file read and write now names its encoding. A guard test fails if someone forgets. Date-based tests pin 'today'.",
+      lesson: "If a bug depends on the machine or the calendar, make that dependency explicit.",
+      ch: ["Find one script of yours and list what it assumes about your machine.", "Write one test for your most important function.", "Add a test that scans your code for a risky habit, like opening files without an encoding."] },
+    { n: 8, theme: "Automate", title: "The free helper (ai-farm)", sub: "Cheap models for cheap work", done: true,
+      what: "A job queue that tries a free local model first, then a free cloud tier, then a stronger model only as a fallback. Good for bulk drafts and first-pass research.",
+      right: "Boring work costs nothing and runs in the background.",
+      wrong: "Cheap models sound confident and are sometimes wrong. They are not allowed near money, legal, health or credentials.",
+      adapt: "Sensitive-but-simple text is tagged private and stays on the laptop. Every output is treated as a draft that I review.",
+      lesson: "Match the model to the stakes.",
+      ch: ["List ten tasks you give AI. Mark each as low, medium or high stakes.", "Install a local model and use it for the low-stakes list for a week.", "Build a router: local first, cloud second, strong model last, with a 'private' flag."] },
+    { n: 9, theme: "Content", title: "Ship small things publicly", sub: "A salary calculator and a newsletter", done: false,
+      what: "A free salary calculator hosted on GitHub Pages, and a newsletter drafted by the system but only published when I say 'publish'.",
+      right: "Hosting is free and takes minutes.",
+      wrong: "Coming in the next file.",
+      adapt: "Coming soon.",
+      lesson: "Coming soon.",
+      ch: ["Pick one tiny tool people in your field need.", "Build it as a single HTML file.", "Host it on GitHub Pages and ask three people to try it."] }
+  ];
+  var TAGS = ["All"].concat(EPS.map(function (e) { return e.theme; }).filter(function (t, i, a) { return a.indexOf(t) === i; }));
+  var level = 0, theme = "All", checked = {}, openSet = {};
+  function load() { try { checked = JSON.parse(localStorage.getItem("buildlog-checked") || "{}"); } catch (e) { checked = {}; } }
+  function save() { try { localStorage.setItem("buildlog-checked", JSON.stringify(checked)); } catch (e) {} }
+  function el(t, c, h) { var x = document.createElement(t); if (c) x.className = c; if (h != null) x.innerHTML = h; return x; }
+
+  function pills(host, labels, textHost, texts, onPick) {
+    labels.forEach(function (l, i) {
+      var b = el("button", "", l); b.type = "button";
+      b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+      b.onclick = function () {
+        Array.prototype.forEach.call(host.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", "false"); });
+        b.setAttribute("aria-pressed", "true");
+        if (textHost) textHost.textContent = texts[i];
+        if (onPick) onPick(i);
+      };
+      host.appendChild(b);
+    });
+    if (textHost) textHost.textContent = texts[0];
+  }
+
+  var seq = document.getElementById("seq");
+  STEPS.forEach(function (s, i) {
+    var li = el("li"), b = el("button", "", "<b>" + (i + 1) + "</b><span>" + s[0] + "</span>"); b.type = "button";
+    b.setAttribute("aria-pressed", i === 0 ? "true" : "false");
+    b.onclick = function () {
+      Array.prototype.forEach.call(seq.querySelectorAll("button"), function (x) { x.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true"); document.getElementById("seqText").textContent = s[1];
+    };
+    li.appendChild(b); seq.appendChild(li);
+  });
+  document.getElementById("seqText").textContent = STEPS[0][1];
+
+  pills(document.getElementById("stack"), STACK.map(function (s) { return s[0]; }), document.getElementById("stackText"), STACK.map(function (s) { return s[1]; }));
+  pills(document.getElementById("level"), LEVELS, null, null, function (i) { level = i; render(); });
+  pills(document.getElementById("theme"), TAGS, null, null, function (i) { theme = TAGS[i]; render(); });
+
+  function render() {
+    var host = document.getElementById("files"); host.innerHTML = "";
+    var total = 0, got = 0;
+    EPS.forEach(function (e) { if (e.done) { total++; if (checked[e.n + ":" + level]) got++; } });
+    document.getElementById("score").textContent = LEVELS[level] + " challenges done: " + got + " of " + total;
+    EPS.filter(function (e) { return theme === "All" || e.theme === theme; }).forEach(function (e) {
+      var d = el("details", "ep"); d.open = !!openSet[e.n];
+      d.addEventListener("toggle", function () { openSet[e.n] = d.open; });
+      d.appendChild(el("summary", "", '<span class="num">' + String(e.n).padStart(2, "0") + '</span><span class="t"><b>' + e.title + '</b><span>' + e.sub + '</span></span><span class="tag ' + (e.done ? "done" : "") + '">' + (e.done ? e.theme : "Next up") + '</span>'));
+      var b = el("div", "body");
+      b.appendChild(el("div", "", "<h4>What it is</h4><p>" + e.what + "</p>"));
+      b.appendChild(el("div", "", "<h4>What went right</h4><p>" + e.right + "</p>"));
+      b.appendChild(el("div", "bad", "<h4>What went wrong</h4><p>" + e.wrong + "</p>"));
+      b.appendChild(el("div", "adapt", "<h4>How I adapted</h4><p>" + e.adapt + "</p>"));
+      b.appendChild(el("div", "wide", "<h4>The lesson</h4><p><b>" + e.lesson + "</b></p>"));
+      var c = el("div", "wide challenge", "<h4>Your challenge · " + LEVELS[level] + "</h4><p>" + e.ch[level] + "</p>");
+      if (e.done) {
+        var lab = el("label"), cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!checked[e.n + ":" + level];
+        cb.onchange = function () { checked[e.n + ":" + level] = cb.checked; save(); render(); };
+        lab.appendChild(cb); lab.appendChild(document.createTextNode("I did it")); c.appendChild(lab);
+      }
+      b.appendChild(c); d.appendChild(b); host.appendChild(d);
+    });
+  }
+
+  var vote = document.getElementById("vote"), copied = document.getElementById("copied");
+  EPS.filter(function (e) { return e.done; }).forEach(function (e) {
+    var b = el("button", "chip", "Deep-dive: " + e.title); b.type = "button";
+    b.onclick = function () {
+      var txt = "Ops room: deep-dive on episode " + e.n + " (" + e.title + ") please";
+      var ok = function () { copied.textContent = "Copied. Paste it in the comments."; };
+      var no = function () { copied.textContent = "Copy this: " + txt; };
+      try { navigator.clipboard.writeText(txt).then(ok, no); } catch (x) { no(); }
+    };
+    vote.appendChild(b);
+  });
+  load(); render();
+})();
+</script>
+</body>
+</html>
