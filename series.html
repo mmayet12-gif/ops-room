@@ -113,9 +113,9 @@ footer { margin-top:64px; padding-top:18px; border-top:1px solid var(--line); co
 <body>
 <div class="wrap">
 <header class="hero">
-  <p class="eyebrow">The Build Log · Season 1</p>
+  <p class="eyebrow">The Build Log · Season 1 · A CA building with AI</p>
   <h1>Everything I've built with AI. Including what broke.</h1>
-  <p class="lead">I went to the Africa AI Expo and came home buzzing. Everyone was talking about what AI could do. I wanted to show what it actually does on one ordinary laptop, over months, with real failures. One project at a time. Open the files, tick off the challenges, build your own.</p>
+  <p class="lead">I'm a chartered accountant, and the CA toolkit (reconcile, maker-checker, materiality, audit trail) turns out to be what AI needs most. I went to the Africa AI Expo and came home buzzing. Everyone was talking about what AI could do. I wanted to show what it actually does on one ordinary laptop, over months, with real failures. One project at a time. Open the files, tick off the challenges, build your own.</p>
   <p><a href="index.html">First, the one-page tour: The Laptop Ops Room &rarr;</a></p>
 </header>
 
@@ -186,6 +186,7 @@ footer { margin-top:64px; padding-top:18px; border-top:1px solid var(--line); co
     ["GitHub + Pages", "Code lives in git. Small public tools and this page are hosted free."],
     ["ffmpeg", "Resizes and prepares videos before they go out."]
   ];
+  var LENS = {1:"Audit trail. Every job, run and failure is logged, so I can answer 'what happened?'",2:"Duplicate detection. Same control an auditor runs on payments, applied to my own requests.",3:"Confidentiality. Treat secrets like client bank details: never in chat, logs or code.",4:"Reconciliation. Every total is checked against the official score before I trust it.",5:"Materiality. Don't raise an alarm over things that don't matter.",6:"Maker-checker. The system prepares, I approve, then I verify the result.",7:"Documented assumptions. A hidden assumption is an audit finding waiting to happen.",8:"Segregation of duties. Cheap model drafts, I review, the strong model does the hard part.",9:"Release control. Nothing publishes until I say publish."};
   var LEVELS = ["Curious", "Builder", "Operator"];
   var EPS = [
     { n: 1, theme: "Automate", title: "The night shift", sub: "A task runner that works while I sleep", done: true,
@@ -303,6 +304,7 @@ footer { margin-top:64px; padding-top:18px; border-top:1px solid var(--line); co
       b.appendChild(el("div", "", "<h4>What went right</h4><p>" + e.right + "</p>"));
       b.appendChild(el("div", "bad", "<h4>What went wrong</h4><p>" + e.wrong + "</p>"));
       b.appendChild(el("div", "adapt", "<h4>How I adapted</h4><p>" + e.adapt + "</p>"));
+      b.appendChild(el("div", "wide", "<h4>The CA lens</h4><p>" + LENS[e.n] + "</p>"));
       b.appendChild(el("div", "wide", "<h4>The lesson</h4><p><b>" + e.lesson + "</b></p>"));
       var c = el("div", "wide challenge", "<h4>Your challenge · " + LEVELS[level] + "</h4><p>" + e.ch[level] + "</p>");
       if (e.done) {
