@@ -125,7 +125,7 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
     <li><a href="#l4"><b>04</b><span>Permissions</span><small>allow · ask · deny</small></a></li>
     <li><a href="#l5"><b>05</b><span>Hooks</span><small>automatic checks</small></a></li>
     <li><a href="#l6"><b>06</b><span>Skills and plugins</span><small>repeatable recipes</small></a></li>
-    <li><a href="#l7"><b>07</b><span>Token savers</span><small>stretch the plan</small></a></li>
+    <li><a href="#l7"><b>07</b><span>AI farm and token savers</span><small>free first</small></a></li>
     <li><a href="#l8"><b>08</b><span>Second brain and file structure</span><small>what it knows</small></a></li>
     <li><a href="#l9"><b>09</b><span>How it learns from itself</span><small>gets better</small></a></li>
     <li><a href="#master"><b>+</b><span>The master prompt that started it</span><small>copy it</small></a></li>
@@ -293,12 +293,12 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
   </article>
 
   <article class="layer" id="l7">
-    <header><b>07</b><h3>Token savers</h3><p class="what">I'm on a normal subscription. These are how I stretch it.</p></header>
+    <header><b>07</b><h3>AI farm and token savers</h3><p class="what">I'm on a normal subscription with no API bills. These are how I stretch it.</p></header>
     <div class="box"><span>What works</span>
       <ul>
         <li><b>RTK hook:</b> compresses shell output before Claude reads it. Across 1,691 commands it saved 1.6M tokens, about 62%.</li>
         <li><b>Right-sized models:</b> Haiku for housekeeping, Opus only for design and review (layer 3).</li>
-        <li><b>The AI farm:</b> drafts, lists and summaries go to free local or free-tier models first.</li>
+        <li><b>The AI farm:</b> any project drops a job in a folder; every 30 seconds the farm sends it to the cheapest brain that can do it. Local Ollama first, then Google Gemini's free tier, then Claude on the plan I already pay for. A junk answer (empty, cut off, refused) moves up a brain. Code and admin go straight to Claude. Jobs marked private never leave the laptop. Of 40 jobs so far, 12 were sent free-first and 9 stayed free.</li>
         <li><b>Cache once:</b> fetch data once, save it, let Claude read the file. My worst week had 96% of usage in one chat that kept re-fetching the same data.</li>
         <li><b>Handover notes:</b> a new session reads one page instead of re-discovering the project.</li>
       </ul>
