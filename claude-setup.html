@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>My Claude Setup</title>
-<meta name="description" content="A user guide to how I set up Claude Code on one laptop: instruction files, a team of subagents, permissions, hooks, skills and the tricks that cut token use.">
+<meta name="description" content="A user guide to how I set up Claude Code on one laptop: instruction files, a team of subagents, permissions, hooks, skills, a second brain, how it learns from itself, and the tricks that cut token use.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: a field guide. Hero, the seven layers as a stacked diagram, one open card per layer (what it is / my setup / copy this / CA lens), a 30-minute starter checklist. Same scorebook look as the Build Log. */
@@ -101,9 +101,9 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
 <header class="hero">
   <p class="eyebrow">The Build Log · Field guide · A CA building with AI</p>
   <h1>How I set up Claude</h1>
-  <p class="lead">Everything I build runs through one setup on one 2017 laptop. This is the user guide: seven layers, what each one does, exactly what I put in it, and what to copy first.</p>
+  <p class="lead">Everything I build runs through one setup on one 2017 laptop. This is the user guide: nine layers, what each one does, exactly what I put in it, and what to copy first.</p>
   <div class="stats">
-    <div class="stat"><b>7</b><span>layers of setup</span></div>
+    <div class="stat"><b>9</b><span>layers of setup</span></div>
     <div class="stat"><b>9</b><span>specialist subagents</span></div>
     <div class="stat"><b>3</b><span>model sizes, used on purpose</span></div>
     <div class="stat"><b>1.6M</b><span>tokens saved by one hook</span></div>
@@ -111,8 +111,8 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
 </header>
 
 <section aria-labelledby="map">
-  <h2 id="map">The seven layers</h2>
-  <p class="intro">Think of it like onboarding a very fast new hire. First you tell them the house rules, then give them a team, then limit what they can sign off, then automate the checks.</p>
+  <h2 id="map">The nine layers</h2>
+  <p class="intro">Think of it like onboarding a very fast new hire. First you tell them the house rules, then give them a team, then limit what they can sign off, then automate the checks. The last two layers are what make it get better on its own.</p>
   <ol class="stack">
     <li><a href="#l1"><b>01</b><span>Global instructions</span><small>every project</small></a></li>
     <li><a href="#l2"><b>02</b><span>Project rulebook (CLAUDE.md)</span><small>per project</small></a></li>
@@ -121,6 +121,8 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
     <li><a href="#l5"><b>05</b><span>Hooks</span><small>automatic checks</small></a></li>
     <li><a href="#l6"><b>06</b><span>Skills and plugins</span><small>repeatable recipes</small></a></li>
     <li><a href="#l7"><b>07</b><span>Token savers</span><small>stretch the plan</small></a></li>
+    <li><a href="#l8"><b>08</b><span>Second brain and file structure</span><small>what it knows</small></a></li>
+    <li><a href="#l9"><b>09</b><span>How it learns from itself</span><small>gets better</small></a></li>
   </ol>
 </section>
 
@@ -297,6 +299,84 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
     </div>
     <p class="lens"><span>CA lens</span>Materiality. Spend the expensive effort where being wrong is expensive.</p>
   </article>
+
+  <article class="layer" id="l8">
+    <header><b>08</b><h3>Second brain and file structure</h3><p class="what">Plain Markdown files that hold what Claude should know about me, each project and every past decision. Each file has one job.</p></header>
+    <div class="box"><span>The map</span>
+<pre>brain/                    <span style="color:var(--muted)"># uploaded to a Claude Project</span>
+  00-about-me.md          who I am, how I work, how to work with me
+  01-projects.md          what I'm building and why
+  project instructions    "read these first; ask, don't guess"
+
+~/.claude/
+  CLAUDE.md               global rules, one page        (layer 1)
+  agents/                 agents available everywhere   (layer 3)
+  projects/&lt;project&gt;/memory/
+    MEMORY.md             the index: one line per lesson
+    &lt;lesson&gt;.md           one lesson per file           (layer 9)
+
+&lt;project&gt;/
+  CLAUDE.md               live status + house rules     (layer 2)
+  docs/architecture.md    how the pieces fit
+  docs/decisions.md       every decision, dated, with the why
+  docs/HANDOVER.md        done, not done, exact next command
+  docs/runbook.md         what to do when it breaks
+  docs/specs/             one spec per tool, written before code
+  .claude/                agents, skills, hooks, permissions</pre>
+    </div>
+    <div class="cols">
+      <div class="box"><span>How the second brain works</span>
+        <ul>
+          <li>Numbered files, read in order. <code>00</code> is the essentials and points to the rest.</li>
+          <li>The project instruction says: treat these files as the truth, never ask me to re-explain what's in them.</li>
+          <li>Gaps are marked <code>[Add later: ...]</code>. If one matters, Claude asks me instead of guessing.</li>
+        </ul>
+      </div>
+      <div class="box"><span>Copy this</span>
+        <ul>
+          <li>Write <code>00-about-me.md</code> tonight: who you are, how you like to work, what you never want.</li>
+          <li>One fact, one place. If two files disagree, Claude will pick one, and not always the right one.</li>
+          <li>Keep indexes short. The index loads every time; the detail loads only when needed.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="lens"><span>CA lens</span>The permanent file. Everything a new team member needs, in a standard order, so nobody starts from zero.</p>
+  </article>
+
+  <article class="layer" id="l9">
+    <header><b>09</b><h3>How it learns from itself</h3><p class="what">Every session leaves the next one smarter. Nothing here is magic: it's a habit of writing lessons down where the next session will read them.</p></header>
+    <ol class="stack" aria-label="The learning loop">
+      <li><a href="#l9"><b>1</b><span>I correct something, or a fix teaches a lesson</span><small>trigger</small></a></li>
+      <li><a href="#l9"><b>2</b><span>Claude writes one memory file: the rule, <em>why</em>, and <em>how to apply it</em></span><small>record</small></a></li>
+      <li><a href="#l9"><b>3</b><span>It adds one line to the <code>MEMORY.md</code> index</span><small>index</small></a></li>
+      <li><a href="#l9"><b>4</b><span>The next session loads the index and pulls the lesson when it's relevant</span><small>recall</small></a></li>
+      <li><a href="#l9"><b>5</b><span>Now and then, merge duplicates and delete lessons that turned out wrong</span><small>clean up</small></a></li>
+    </ol>
+    <div class="cols">
+      <div class="box"><span>Lessons it has learned</span>
+        <ul>
+          <li><b>Audit success rates, not just errors.</b> Three times a feature died silently inside a caught error. Now it checks how often things <em>succeed</em>.</li>
+          <li><b>Optimise the input, not the output.</b> Rank on what the platform measures, not on the number that comes out at the end.</li>
+          <li><b>Cache once.</b> Fetch data once, save it, read the file.</li>
+        </ul>
+      </div>
+      <div class="box"><span>Three more loops</span>
+        <ul>
+          <li><b>Decisions log:</b> 12 dated decisions with reasons in my biggest project, so settled questions stay settled.</li>
+          <li><b>Handover:</b> each work window ends with the exact next command, so the next one starts running.</li>
+          <li><b>Results loop:</b> my content pipeline scores what actually performed, re-ranks its plan towards the winners once a day, and orders more of them. Scores are recomputed from scratch each run, so a winner that fades loses its boost. Anything that needs a fact-check is parked for me, never auto-published.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="box"><span>Copy this</span>
+      <ul>
+        <li>When you correct Claude, add: "remember this, and why". That one sentence turns a fix into a rule.</li>
+        <li>Save the <em>why</em> with every lesson. A rule without its reason gets applied in the wrong places.</li>
+        <li>Make any automatic learning auditable: log what it changed and why, and keep a human gate on anything public.</li>
+      </ul>
+    </div>
+    <p class="lens"><span>CA lens</span>Post-implementation review and management letter points. Findings are written up, carried forward, and checked again next year.</p>
+  </article>
 </section>
 
 <section aria-labelledby="start">
@@ -310,6 +390,8 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
     <li><label><input type="checkbox"><span>Set permissions: allow tests, ask before push, deny <code>.env</code> and force-push.</span></label></li>
     <li><label><input type="checkbox"><span>Add a secrets-blocking hook before commits.</span></label></li>
     <li><label><input type="checkbox"><span>Turn the task you repeat most into a skill.</span></label></li>
+    <li><label><input type="checkbox"><span>Write <code>00-about-me.md</code> and add it to a Claude Project with a "read this first" instruction.</span></label></li>
+    <li><label><input type="checkbox"><span>Next time you correct Claude, say "remember this, and why".</span></label></li>
   </ul>
 </section>
 
