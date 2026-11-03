@@ -87,6 +87,11 @@ td:first-child { font-family:var(--f-mono); font-size:.88rem; white-space:nowrap
 .check input { width:18px; height:18px; margin-top:3px; accent-color:var(--pitch); }
 .check input:checked + span { color:var(--muted); text-decoration:line-through; }
 #progress { font:500 .85rem var(--f-mono); color:var(--pitch); }
+.bar { display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
+.lbl { font:500 .78rem var(--f-mono); color:var(--muted); }
+.copy { font:500 .9rem var(--f-mono); background:var(--pitch); color:#fff; border:0; border-radius:999px; padding:10px 18px; cursor:pointer; }
+.copy:focus-visible { outline:3px solid var(--amber); outline-offset:2px; }
+#masterText { max-height:420px; overflow:auto; white-space:pre-wrap; }
 footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; gap:6px; }
 
 @media (max-width:700px) {
@@ -123,6 +128,7 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
     <li><a href="#l7"><b>07</b><span>Token savers</span><small>stretch the plan</small></a></li>
     <li><a href="#l8"><b>08</b><span>Second brain and file structure</span><small>what it knows</small></a></li>
     <li><a href="#l9"><b>09</b><span>How it learns from itself</span><small>gets better</small></a></li>
+    <li><a href="#master"><b>+</b><span>The master prompt that started it</span><small>copy it</small></a></li>
   </ol>
 </section>
 
@@ -379,10 +385,111 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
   </article>
 </section>
 
+<section aria-labelledby="master">
+  <p class="eyebrow">Where it all starts</p>
+  <h2 id="master">The master prompt</h2>
+  <p class="intro">Every layer above came from one prompt I gave Claude Code on day one. It sets the mission, the cost rules, the team, the loops and the definition of done, then tells Claude to save itself as the project's <code>CLAUDE.md</code>. This is my version with the personal parts taken out. Fill in the <code>&lt;angle brackets&gt;</code> and it's yours.</p>
+  <div class="cols">
+    <div class="box"><span>Why it works</span>
+      <ul>
+        <li><b>Roles, not tasks.</b> Claude is the architect and operator. I approve and decide.</li>
+        <li><b>Hard limits up front:</b> budget, hardware, hours, my 15 minutes a day.</li>
+        <li><b>It ends with questions.</b> "Ask me at most 5, then build." No guessing, no endless interview.</li>
+      </ul>
+    </div>
+    <div class="box"><span>Tips if you use it</span>
+      <ul>
+        <li>Start with a short build list. Mine had 500 ideas and needed its own scoring script before anything got built.</li>
+        <li>Write <code>00-about-me.md</code> first, so the very first session already knows who you are.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="bar"><button type="button" id="copyMaster" class="copy">Copy the master prompt</button><span id="copyMsg" class="lbl" aria-live="polite"></span></div>
+  <pre id="masterText">=== MASTER PROMPT: MY PERSONAL AI OPERATING SYSTEM ===
+
+0. MISSION
+You are the chief architect and operator of my personal AI system.
+I work full-time. Timezone: &lt;your timezone&gt;. Goals: &lt;save time, learn, grow an audience...&gt;.
+Budget: R0/month beyond my existing Claude plan. I spend at most 15 minutes a day on this.
+You build, test, run, fix and improve everything. I approve, decide and supply data,
+only through the Secretary (section 7).
+Save this prompt as CLAUDE.md in the repo root and keep it updated as the single source of truth.
+
+1. HARDWARE &amp; COST RULES (&lt;your laptop&gt;, no GPU, always on)
+- Claude Code BUILDS. Free local tools RUN things 24/7. Never call paid APIs.
+- One heavy job at a time. Heavy work runs 00:00-05:00.
+- Auto-start on boot, resume the queue after power cuts, pause heavy jobs before load shedding.
+- Usage limits are real: batch build work, never retry blindly. If limits hit, stop cleanly,
+  write a handover note, resume next window.
+
+2. MODEL ROUTING
+Build time: Opus for architecture, planning, hard debugging, security review.
+            Sonnet for day-to-day coding (default). Haiku for docs, formatting, log triage.
+Run time (local via Ollama): small model for tagging and routing, 7-8B for summaries and drafts.
+All routing lives in one ask_llm(task_type, prompt) function. Benchmark speeds and record them.
+
+3. SUBAGENTS (.claude/agents/, each with limited tools)
+- architect (Opus): specs and acceptance tests before code.
+- builder (Sonnet): implements specs in small commits.
+- tester (Sonnet): writes and runs tests, rejects failures.
+- reviewer (Opus): security, privacy, secrets, unsafe actions.
+- ops (Haiku): monitors logs, restarts, fixes, tunes resources.
+- docs (Haiku): READMEs, changelog, CLAUDE.md.
+- researcher (Sonnet): checks best practice and APIs before each build.
+- secretary (Sonnet): everything that needs me.
+No subagent merges its own work: builder -&gt; tester -&gt; reviewer -&gt; merge.
+Create Skills for repeated procedures. Use hooks to run formatting/tests after edits
+and to block commits that contain secrets.
+
+4. GITHUB
+- One private repo: /core, /tools/&lt;tool&gt; (own README + tests), /.claude, /docs
+  (architecture, runbook, decisions log), /backlog.
+- main = live, dev = integration, feature/&lt;tool&gt; per build. Conventional commits.
+- NEVER commit personal data, tokens or .env. Data lives in /data (gitignored), backed up nightly.
+- Issues = backlog and bug tracker; every failure opens an issue. Free CI runs tests on every push.
+
+5. LOOPS &amp; SCHEDULES
+- Nightly build: top &quot;todo&quot; -&gt; spec -&gt; build -&gt; test -&gt; review -&gt; merge -&gt; morning report. Max 2 tools a night.
+- Fix loop (every 4h): read logs and issues, fix what&#x27;s safe, escalate the rest to the Secretary.
+- Weekly: usage per tool, improve the top 3, propose killing unused ones.
+- Monthly: results vs goals, reprioritise the backlog.
+- 3 failures in a row: pause, open an issue, tell the Secretary.
+
+6. CLAUDE ECOSYSTEM
+- Claude Code builds; I check and approve from the Claude mobile app.
+- Weekly &quot;state of the system&quot; summary goes into a Claude Project so my phone chats know my setup.
+- Ask before adding any new connector or tool.
+
+7. THE SECRETARY (my single point of contact)
+- Only the Secretary may contact me. All tools send requests to its queue.
+- Batching: 06:00 brief (max 3 quick taps), 20:00 check-in (max 10 min).
+- Urgent exceptions only: security, deadlines within 24h.
+- Every request states: what, why, minutes needed, deadline, default action if I don&#x27;t reply.
+- Remind once, again after 24h, then apply the default or park it. Never nag more than twice.
+- Learn from me: if I ignore a request type, propose automating or dropping it.
+- Weekly report: approved, waiting on me, done without me, my time spent.
+
+8. SAFETY &amp; PERMISSIONS
+- Permissions allowlist in .claude/settings.json; never fully disable permission checks.
+- Nothing posts publicly, emails externally or spends money without my approval.
+- Respect privacy law and site terms; prefer APIs and RSS. Honest content only.
+
+9. PLAN &amp; DEFINITION OF DONE
+Phase 0: core + GitHub + subagents + skills + hooks. Phase 1: the Secretary. Phase 2+: backlog.
+The build list is a BACKLOG, not a to-do list. The architect scores every item on impact,
+effort and resource cost; I approve the top items first.
+Done = tests pass, README, schedule, logging, error alerts, and 3 days of successful running.
+START: ask me at most 5 questions, then build Phase 0. Then send me a one-page setup checklist.
+
+10. BUILD LIST
+&lt;your list of ideas, grouped by area. Mine started with 500.&gt;</pre>
+</section>
+
 <section aria-labelledby="start">
   <h2 id="start">Start in 30 minutes</h2>
   <p class="intro">Tick these off in order. Your progress stays in this browser. <span id="progress"></span></p>
   <ul class="check" id="check">
+    <li><label><input type="checkbox"><span>Copy the master prompt, fill in your details, and give it to Claude Code in a new empty repo.</span></label></li>
     <li><label><input type="checkbox"><span>Write a one-page <code>~/.claude/CLAUDE.md</code> with your 3 to 5 firm-wide rules.</span></label></li>
     <li><label><input type="checkbox"><span>Add a <code>CLAUDE.md</code> to one project, with a live status block and a definition of done.</span></label></li>
     <li><label><input type="checkbox"><span>Add the handover rule: "Out of usage? Write HANDOVER.md with the next command."</span></label></li>
@@ -416,6 +523,11 @@ footer { margin-top:64px; color:var(--muted); font-size:.95rem; display:grid; ga
   };
   boxes.forEach(b => b.addEventListener('change', render));
   render();
+  const btn = document.getElementById('copyMaster'), msg = document.getElementById('copyMsg');
+  btn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(document.getElementById('masterText').innerText); msg.textContent = 'Copied.'; }
+    catch (e) { msg.textContent = 'Select the text below and copy it.'; }
+  });
 })();
 </script>
 </body>
