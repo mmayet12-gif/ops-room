@@ -1,0 +1,9 @@
+# Key files: never commit (secrets sweep, 13 Nov 2026)
+.env
+.env.*
+!.env.example
+secrets/
+**/secrets/
+*token*.json
+client_secret*.json
+*.pem
