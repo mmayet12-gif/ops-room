@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rugby Analyst: Match Centres</title>
+<meta name="description" content="Rugby match centres built with public data: a dossier written before kick-off, a review after, and the method. Performance data only; no predictions.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{--paper:#f4f7f5;--card:#fff;--ink:#12231c;--muted:#5b6b64;--line:#d3ddd7;--pitch:#1b6b49;--pitch-soft:#dcefe6;
+--seam:#c4382b;--grid:rgba(27,107,73,.07);--ita:#2f6fdb;--sa:#1b6b49;--oppo:#8c9a93;--oppo2:#c4cdc8;--seg:#fff;--g1:#b5770b;--g2:#6b5bd2;
+--f-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;--f-body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+--f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0d1713;--card:#14211b;--ink:#e8f0ec;--muted:#9bb0a6;
+--line:#26382f;--pitch:#3fb985;--pitch-soft:#173a2b;--seam:#ff6b5b;--grid:rgba(63,185,133,.08);--ita:#6ea0ff;--sa:#3fb985;
+--oppo:#6f827a;--oppo2:#41544b;--seg:#0d1713;--g1:#e0a43a;--g2:#a99bff;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 var(--f-body);padding:0 16px 72px;
+background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+.wrap{max-width:880px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:clamp(2.1rem,6.4vw,3.6rem);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(1.3rem,3.8vw,1.8rem);font-weight:700}
+h3{font-size:1.05rem;font-weight:700}
+p{margin:0}a{color:var(--pitch)}code{font:500 .85em var(--f-mono)}
+.eyebrow{font:500 .78rem var(--f-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--pitch)}
+.hero{padding-top:48px;display:grid;gap:14px}
+.lead{font-size:1.15rem;max-width:62ch;color:var(--muted)}
+.context{max-width:62ch;border-left:3px solid var(--pitch);padding-left:12px}
+.badge{font:500 .78rem var(--f-mono);color:var(--seam);border:1px solid var(--seam);border-radius:999px;padding:2px 10px;justify-self:start}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:28px}
+.tabs button{font:500 .85rem var(--f-mono);background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--pitch);border-color:var(--pitch);color:#fff}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--pitch);outline-offset:2px}
+section{margin-top:44px;display:grid;gap:14px}
+.intro{max-width:64ch}
+.note{color:var(--muted);font-size:.92rem;max-width:70ch}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:700px){.pair{grid-template-columns:1fr}}
+figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0}
+svg{width:100%;height:auto;display:block}
+figure img{width:100%;height:auto;display:block;border-radius:8px;border:1px solid var(--line)}
+svg .grid{stroke:var(--line);stroke-width:1}svg .axis{stroke:var(--muted);stroke-width:1}
+svg text{font-family:var(--f-mono);fill:var(--ink)}
+svg .tick{font-size:10px;fill:var(--muted)}svg .cat{font-size:11px}svg .val{font-size:10.5px}
+svg .seg{font-size:11px;fill:var(--seg);font-weight:500}
+svg path.line{fill:none}svg path.line.ita{stroke:var(--ita)}svg path.line.sa{stroke:var(--sa)}.await{color:var(--muted);font-style:italic}svg .g1{fill:var(--g1)}svg .g2{fill:var(--g2)}svg .seg.dark{fill:#12231c}svg .ita{fill:var(--ita)}svg .sa{fill:var(--sa)}svg .opp{fill:var(--oppo)}svg .opp2{fill:var(--oppo2)}
+.sample{font-size:.85rem;color:var(--muted);margin-top:6px}
+details.nums{margin-top:6px;font-size:.85rem}details.nums summary{cursor:pointer;color:var(--pitch)}
+table{border-collapse:collapse;width:100%;margin-top:6px;font:400 .8rem var(--f-mono)}
+caption{text-align:left;color:var(--muted);padding-bottom:4px}
+th,td{text-align:left;border-bottom:1px solid var(--line);padding:3px 6px}
+.gaps{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.gaps ul,section ul{margin:0;padding-left:20px;display:grid;gap:8px}
+.steps{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+@media (max-width:700px){.steps{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;gap:6px}
+footer{margin-top:56px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem;display:grid;gap:8px}
+
+svg .ire{fill:var(--ire)}svg .rsa{fill:var(--rsa)}svg .g1{fill:var(--g1)}svg .g2{fill:var(--g2)}
+svg path.line{stroke:var(--ink)}svg .tk{stroke:var(--ink)}svg .iret{stroke:var(--ire)}svg .rsat{stroke:var(--rsa)}
+svg .card-y{fill:#f2c230}svg .card-r{fill:#d33}
+:root{--ire:#1f9d62;--rsa:#c28a12}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ire:#4fd08a;--rsa:#e8b84a}}
+a.src{font:500 .75rem var(--f-mono);text-decoration:none;white-space:nowrap}
+.proof{background:var(--card);border:1px solid var(--pitch);border-radius:14px;padding:14px 18px;display:grid;gap:6px}
+.cant{background:var(--card);border:1px dashed var(--muted);border-radius:14px;padding:16px 18px;display:grid;gap:8px}
+ol.pats{margin:0;padding-left:24px;display:grid;gap:12px}
+.pc{max-width:70ch}
+.v{font:500 .78rem var(--f-mono);border-radius:6px;padding:2px 8px;border:1px solid var(--line);white-space:nowrap}
+.v.held{border-color:var(--ire);color:var(--ire)}.v.notheld{border-color:var(--seam);color:var(--seam)}.v.nobasis{color:var(--muted)}
+.tbl{overflow-x:auto}table.cmp{font:400 .85rem var(--f-body);min-width:760px}table.cmp td,table.cmp th{vertical-align:top;padding:8px 8px}
+ol.refs{padding-left:22px;display:grid;gap:6px;font-size:.88rem;overflow-wrap:anywhere}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}@media (max-width:700px){.cards{grid-template-columns:1fr}}
+a.card{display:grid;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;color:var(--ink);text-decoration:none}
+a.card:hover,a.card:focus-visible{border-color:var(--pitch)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <p class="eyebrow">Build Log · Rugby analyst</p>
+  <h1>A rugby analysis desk, on one old laptop</h1>
+  <p class="lead">Public data, scripts for every number, a dossier written before the match and a review after it. Performance data only. No predictions, no betting angle.</p>
+</header>
+<main>
+<section><h2>Match centres</h2>
+<div class="cards">
+<a class="card" href="ireland-sa-2026.html"><span class="eyebrow">21 Nov 2026 · Dublin</span><h3>Ireland 20, South Africa 17</h3><p>Twelve patterns written before kick-off, marked after: held 5, did not hold 5, no basis 2. Seven one-match analytics, how it was built, and how professional analysts work.</p></a>
+<a class="card" href="italy-sa-2026.html"><span class="eyebrow">7 Nov 2026 · Turin</span><h3>Italy 7, South Africa 66</h3><p>The first match centre: form windows, bench, discipline, try scorers, selection and the review.</p></a>
+</div></section>
+<section><h2>The method in five lines</h2>
+<ol><li>Fetch each match once from ESPN's free feed, cache it, load it into a database, and reconcile it to the final score.</li>
+<li>Write the dossier before kick-off: patterns with fixed tests, committed to git so the time is on record.</li>
+<li>After full time, a script marks each pattern Held, Did not hold or No basis, by rules fixed in advance.</li>
+<li>Every number comes from a script with a sample size; one-match charts say "descriptive, not a trend".</li>
+<li>A separate reviewer checks the page before it goes live. What the feed cannot show is listed, not estimated.</li></ol>
+<p class="note">The same method on cricket: <a href="../cricket/bangladesh-series.html">South Africa v Bangladesh series</a> and <a href="../cricket/bangladesh-test2.html">2nd Test</a>.</p></section>
+</main>
+<footer><p>Muhammad Mayet · CA(SA) · Johannesburg. Players are public figures and only match performance data is used. Nothing here is advice or a prediction.</p></footer>
+</div>
+</body>
+</html>
