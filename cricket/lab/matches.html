@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Impact Match Cards</title>
+<meta name="description" content="T20 Lab Impact scorecards: Impact by over and phase, batter and bowler Impact, WPA card and win-probability worm.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Tool 4 · Scorecards</div>
+  <h1>Impact match cards</h1>
+  <p class="lead">The primer's scorecard: each side's batting Impact (runs added against the resource curve), split by over and phase, with who added and who cost runs, and the win-probability worm.</p>
+</header>
+<section aria-labelledby="h-pick">
+  <h2 id="h-pick" class="eyebrow" style="font-size:.8rem">Pick a match</h2>
+  <div class="panel">
+    <div class="controls">
+      <label>Competition<select id="comp"><option>IPL</option><option>SA20</option><option>BBL</option><option>PSL</option><option>T20I</option></select></label>
+      <label style="grid-column:span 2">Match<select id="match"></select></label>
+    </div>
+    <p class="note" id="season"></p>
+  </div>
+</section>
+<section aria-labelledby="h-card"><h2 id="h-card">…</h2><div class="note" id="sub"></div>
+  <div class="panel"><h3>Win probability, side batting first</h3><div id="worm"></div><p class="note">Dashed line = innings break. Each point is after a ball.</p></div>
+  <div id="inns"></div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  let D;
+  async function loadComp() {
+    D = await LAB.load(`matches_${$("comp").value.toLowerCase()}.json`);
+    $("season").textContent = `${D.cards.length} matches from ${D.season === "2026" && $("comp").value === "T20I" ? "2026 (full-member T20Is)" : "the " + D.season + " season"}.`;
+    $("match").innerHTML = D.cards.slice().reverse().map((c, i) => `<option value="${D.cards.length - 1 - i}">${c.date} · ${LAB.esc(c.teams[0])} ${c.scores[0][0]}/${c.scores[0][1]} v ${LAB.esc(c.teams[1] || "")} ${c.scores[1] ? c.scores[1][0] + "/" + c.scores[1][1] : ""}</option>`).join("");
+    draw();
+  }
+  function draw() {
+    const c = D.cards[+$("match").value];
+    const res = c.winner ? `${c.winner} won` : (c.result || "no result");
+    $("h-card").textContent = `${c.teams[0]} ${LAB.sg(c.imp_total[0])} v ${LAB.sg(c.imp_total[1] ?? 0)} ${c.teams[1] || ""}`;
+    $("sub").textContent = `${c.date}, ${c.venue}. ${res}. Par ${c.par} (λ ${c.lambda}). Headline numbers are each side's total batting Impact in runs.`;
+    const pts = c.worm.map((p, i) => [i, p[2]]);
+    const brk = c.worm.findIndex(p => p[0] === 2);
+    const series = [{ pts, color: "var(--pitch)" }];
+    if (brk > 0) series.push({ pts: [[brk, 0], [brk, 1]], color: "var(--muted)", dash: "4 4", w: 1 });
+    LAB.line($("worm"), series, { title: "Win probability worm", y0: 0, y1: 1, x0: 0, yticks: [0, .5, 1], yfmt: v => (v * 100) + "%", xticks: [], H: 170 });
+    $("inns").innerHTML = [0, 1].filter(i => c.by_over[i] && c.scores[i]).map(i => `<div class="panel" style="margin-top:12px">
+      <h3>${LAB.esc(c.teams[i])} batting: ${c.scores[i][0]}/${c.scores[i][1]}, Impact ${LAB.sg(c.imp_total[i])}</h3>
+      <p class="note">By phase: ${["PP", "M1", "M2", "D"].map(k => `${k} ${LAB.sg(c.phases[i][k] ?? 0)}`).join(" · ")} (PP overs 1-6, M1 7-11, M2 12-16, D 17-20)</p>
+      <div id="ov${i}"></div>
+      <div class="cards"><div><h3 style="font-size:.9rem">Batter Impact</h3><div id="bt${i}"></div></div><div><h3 style="font-size:.9rem">Bowler Impact (opposition)</h3><div id="bw${i}"></div></div></div>
+      <details><summary>WPA card</summary><div class="tablewrap" id="wt${i}" style="margin-top:8px"></div></details></div>`).join("");
+    [0, 1].forEach(i => {
+      if (!$("ov" + i)) return;
+      LAB.columns($("ov" + i), c.by_over[i], { seps: [6, 11, 16], title: "Impact by over" });
+      const bat = c.bat.filter(r => r[0] === i + 1).map(r => ({ label: r[1], v: r[4] })).sort((a, b) => b.v - a.v);
+      const bowl = c.bowl.filter(r => r[0] === i + 1).map(r => ({ label: r[1], v: r[5], fill: r[5] >= 0 ? "var(--amber)" : "var(--seam)" })).sort((a, b) => b.v - a.v);
+      LAB.bars($("bt" + i), bat, { title: "Batter Impact" }); LAB.bars($("bw" + i), bowl, { title: "Bowler Impact" });
+      const rows = c.bat.filter(r => r[0] === i + 1).map(r => ({ p: r[1], role: "bat", b: r[2], runs: r[3], raa: r[6], imp: r[4], wpa: r[5], w100: r[2] ? 100 * r[5] / r[2] : null }))
+        .concat(c.bowl.filter(r => r[0] === i + 1).map(r => ({ p: r[1], role: "bowl", b: r[2], runs: r[3], raa: null, imp: r[5], wpa: r[6], w100: r[2] ? 100 * r[6] / r[2] : null })));
+      LAB.table($("wt" + i), [{ k: "p", t: "Player" }, { k: "role", t: "Role" }, { k: "b", t: "Balls" }, { k: "runs", t: "Runs" }, { k: "raa", t: "RAA", d: 1, sign: true }, { k: "imp", t: "Impact", d: 1, sign: true }, { k: "wpa", t: "WPA", d: 3, sign: true }, { k: "w100", t: "WPA/100", d: 2, sign: true }], rows, { sort: "wpa" });
+    });
+  }
+  $("comp").onchange = loadComp; $("match").onchange = draw;
+  loadComp();
+})();
+</script>
+</body>
+</html>

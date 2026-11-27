@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>T20 Lab Methods</title>
+<meta name="description" content="T20 Lab methods: formulas, fitted values, data, choices where Ganjoo's primer is silent, and known limits.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Methods</div>
+  <h1>How every number is made</h1>
+  <p class="lead">Built from Himanish Ganjoo's public primer, "T20 Metrics: A Primer" (2026). The primer does not publish its fitted constants or its Appendix A, so everything here is re-fitted on our own data. Where we had to choose, it says so.</p>
+</header>
+
+<section aria-labelledby="h-data"><h2 id="h-data">Data</h2>
+  <div class="panel">
+    <dl class="kv" id="data"></dl>
+    <p class="note">Pro data: Cricsheet ball-by-ball JSON, men's matches from 2015, 20 overs. T20Is are limited to matches between the 12 ICC full members (associate games are a different population). Super overs are left out. "Clean" matches (no rain rule, no reduced overs, a result) are used to fit the curve, par and win probability; every match is scored.</p>
+    <p class="note">Last Man Stands data: the public LMS live-scoring feed (FixtureState) for Johannesburg/Sandton leagues, cached once per match. Players and opposition teams are opaque ids. The extras rule is inferred from the data: the first wide or no-ball in an over is 1 run and re-bowled; a later one in the same over is 3 runs and uses up a ball. With that rule the ball log sums exactly to the official total in the share of matches shown above; the curve, par and win probability are fitted on those matches only.</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-par"><h2 id="h-par">Par scores (nested shrinkage)</h2>
+  <div class="panel">
+    <div class="formula">tree: global → competition (LMS: division) → season → ground
+par_child = w · mean_child + (1 − w) · par_parent,   w = n / (n + k)
+k = s²_within / s²_between
+s²_within  = pooled variance of totals around their own child means
+s²_between = var(child means) − mean(s²_within / n_j), floored at 25</div>
+    <p class="note">The primer describes this in words. Our choices: the method-of-moments correction on s²_between (switchable; held-out RMSE with and without it is on the validation page); k is estimated only where a parent has ≥ 3 children and ≥ 10 innings, otherwise the k pooled across that level, otherwise 8. T20Is use the same tree as leagues (competition → season → ground) instead of the primer's host-country level, because Cricsheet does not record the host country. Par is in-sample for the published tables; the held-out tests refit it on 70% of matches.</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-curve"><h2 id="h-curve">Resource curve</h2>
+  <div class="panel">
+    <div class="formula">R(b, w, λ) = R0 · F(w) · λ^(n_w + 1) · (1 − exp(−b / (β(w) · λ^n_w)))
+n_w = n0 · F(w),  F(w) = 1 + f1·w + f2·w² + f3·w³,  β(w) = β0 · (1 + g1·w + g2·w² + g3·w³)
+b = legal balls left, w = wickets down; R = 0 when b = 0 or the side is all out
+λ solves R(B, 0, λ) = par (bisection on [0.7, 2.5]; λ < 1 allowed)</div>
+    <p class="note">Fitted by weighted least squares on the mean runs still to come in every (b, w) cell of first innings (weights n / variance, cells with fewer than 10 balls dropped), with penalties keeping F and β decreasing and runs-to-come falling when a wicket falls. n0 is then fitted on matches in the top quarter of par, re-solving λ for each candidate. Fitted values: <span id="cv"></span></p>
+  </div>
+</section>
+
+<section aria-labelledby="h-raa"><h2 id="h-raa">RAA and WAA</h2>
+  <div class="panel">
+    <div class="formula">batter: RAA = runs off the bat − E[runs | state],  WAA = E[a batter is out | state] − (striker out)
+bowler: RAA = E[runs charged | state] − runs charged,  WAA = (bowler's wicket) − E[bowler's wicket | state]
+state = (innings, overs left, wickets down, par in the 1st innings or target in the 2nd)</div>
+    <p class="note">The primer uses gradient-boosted trees on these four features, deliberately allowed to overfit. T20 Lab uses the transparent alternative: average outcomes in cells of (innings, overs left, wickets down, par/target band of 10 runs), each cell shrunk towards its coarser parent with n / (n + 30). Wides are not balls faced; no-balls count as faced but carry no RAA expectation; a batter out off a wide or no-ball is charged the dismissal. For bowlers, wides and no-balls count as runs conceded with no expectation. A run-out non-striker is charged −1 WAA.</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-imp"><h2 id="h-imp">Impact (runs added)</h2>
+  <div class="panel">
+    <div class="formula">Impact = runs + R(b − 1, w + wicket, λ) − R(b, w, λ)     (b unchanged on a wide / no-ball)
+striker: runs off the bat + ΔR (+ the wicket's cost if he is out); run-out non-striker: the wicket's cost
+bowler: −(runs charged + ΔR + his wicket's cost); run-out wicket cost → fielding; byes, leg-byes → extras</div>
+    <p class="note">Same formula in both innings, with the match λ. We do not cap the chase (the primer's optional cap) and do not publish opponent-adjusted Impact.</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-wp"><h2 id="h-wp">Win probability, WPA, leverage, clutch</h2>
+  <div class="panel">
+    <div class="formula">1st innings: r = (S + R(b, w, λ) + 1) / R(B, 0, λ)
+2nd innings: r = R(b, w, λ) / N,  N = runs needed
+P = 1 / (1 + exp(−(a + n · ln r)))      primer: a = 0, n = 6
+WPA = P_after − P_before (batting side); bowler gets −WPA (run-out share to fielding)
+Leverage L = P(next legal ball is a six) − P(next legal ball is a wicket for 0);  LI = L / mean L of that innings
+Clutch = WPA / mean LI − Σ WPA_i / max(LI_i, 0.1)     (≥ 300 balls with ≥ 50 at LI > 1.5)</div>
+    <p class="note">The primer's rendered first-innings ratio shows a "+1" that its prose does not explain; we keep it because it makes the end of the first innings meet the start of the chase exactly (with equal n). a and n are fitted by maximum likelihood per innings; the primer's n = 6 is shown alongside. The shift a is Platt scaling, added because n = 6 alone missed our calibration target (expected calibration error ≤ 0.03) on held-out matches. Clutch and leverage-weighted Impact are T20 Lab definitions: the primer marks those sections "in preparation".</p>
+  </div>
+</section>
+
+<section aria-labelledby="h-lim"><h2 id="h-lim">Limits</h2>
+  <div class="panel">
+    <ul class="note" style="margin:0;padding-left:1.1em;display:grid;gap:6px">
+      <li>Ball-by-ball results only: no ball tracking, field settings, shot or bowler type. Context beyond the scoreboard (who bowls next, pitch wear) is not in the numbers.</li>
+      <li>Every figure is a description of past matches with sampling noise. Small samples are labelled; a season of 100 balls is noisy.</li>
+      <li>Par conflates conditions with team strength (a weak home batting side lowers its ground's par), as the primer notes.</li>
+      <li>Player names are as Cricsheet spells them; two players with the same short name in one competition would be merged.</li>
+      <li>LMS: the extras rule is inferred, and some ball logs do not add up to the official total; those matches are scored but not used for fitting.</li>
+    </ul>
+  </div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+Promise.all([LAB.load("model_pro.json"), LAB.load("model_lms.json")]).then(([P, L]) => {
+  const c = P.curve, cl = L.curve;
+  const n = Object.values(P.counts).reduce((a, b) => a + b, 0), nc = Object.values(P.clean_counts).reduce((a, b) => a + b, 0);
+  document.getElementById("data").innerHTML = `<dt>Pro matches</dt><dd>${n} (${Object.entries(P.counts).map(([k, v]) => k + " " + v).join(", ")}); ${nc} clean; ${P.legal_balls.toLocaleString("en-ZA")} legal balls; ${P.date_range[0]} to ${P.date_range[1]}</dd>
+  <dt>LMS matches</dt><dd>${L.counts.matches} (${L.counts.clean_reconciled} clean and reconciled to official totals; ${L.counts.legal_balls.toLocaleString("en-ZA")} legal balls); ${L.date_range[0]} to ${L.date_range[1]}</dd>`;
+  const fx = (k) => `R0 ${k.R0.toFixed(1)}, β0 ${k.beta0.toFixed(1)} balls, n0 ${k.n0.toFixed(3)}, F = (${k.f.map(v => v.toFixed(5)).join(", ")}), g = (${k.g.map(v => v.toFixed(5)).join(", ")})`;
+  document.getElementById("cv").textContent = `pro ${fx(c)}, R(120, 0) = ${P.R_full.toFixed(1)}; LMS ${fx(cl)}, R(100, 0) = ${L.R_full.toFixed(1)}. Win probability: pro n1 ${P.wp.n1.toFixed(2)}, a1 ${P.wp.a1.toFixed(3)}, n2 ${P.wp.n2.toFixed(2)}, a2 ${P.wp.a2.toFixed(3)}; LMS n1 ${L.wp.n1.toFixed(2)}, a1 ${L.wp.a1.toFixed(3)}, n2 ${L.wp.n2.toFixed(2)}, a2 ${L.wp.a2.toFixed(3)}.`;
+});
+</script>
+</body>
+</html>

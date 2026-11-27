@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>T20 Lab</title>
+<meta name="description" content="T20 Lab: context-aware T20 metrics (par, RAA/WAA, resource curve, Impact, win probability, WPA, leverage) for T20Is, IPL, BBL, PSL, SA20 and my Last Man Stands games.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Cricket · T20 Lab</div>
+  <h1>T20 Lab: runs and wickets in context</h1>
+  <p class="lead">A four in the first over and a four at 34 for 3 are not worth the same. This lab puts a value on every ball of T20 cricket by comparing it with what an average side does from the same position, following Himanish Ganjoo's public primer, rebuilt from scratch on open ball-by-ball data.</p>
+  <div class="stats" id="stats"><span class="loading">Loading the numbers…</span></div>
+</header>
+
+<section aria-labelledby="h-tools">
+  <h2 id="h-tools">The tools</h2>
+  <div class="cards">
+    <a class="panel" href="curve.html"><div class="eyebrow">1 · Conditions</div><h3>Resource curve and par scores</h3><p class="note">How many runs a side can still expect from any balls-left and wickets-down state, and the shrunk par score for every ground and season.</p></a>
+    <a class="panel" href="players.html"><div class="eyebrow">2 · Players</div><h3>RAA, WAA, Impact, WPA, clutch</h3><p class="note">Runs and wickets above average, runs added (Impact), wins added (WPA) and leverage, by competition and season. Sortable, with sample sizes.</p></a>
+    <a class="panel" href="winprob.html"><div class="eyebrow">3 · Match state</div><h3>Win probability calculator</h3><p class="note">Set the score, balls and wickets and see the win probability and the swing of the next ball, plus a check of how well calibrated it is on matches it never saw.</p></a>
+    <a class="panel" href="matches.html"><div class="eyebrow">4 · Scorecards</div><h3>Impact match cards</h3><p class="note">Primer-style cards for the latest season of each league: Impact by over and phase, batter and bowler Impact, the WPA card and the win-probability worm.</p></a>
+    <a class="panel" href="validation.html"><div class="eyebrow">5 · Checks</div><h3>Does it hold up?</h3><p class="note">Each claim in the primer, tested on held-out data, with a verdict, the numbers, the sample size, and what we got wrong.</p></a>
+    <a class="panel" href="my-game.html"><div class="eyebrow">6 · Club cricket</div><h3>My game: Last Man Stands</h3><p class="note">The same methods refitted for 8-a-side, 5-ball-over cricket: why my spells are short, my batting in context, our team plan checked, and workload.</p></a>
+  </div>
+</section>
+
+<section aria-labelledby="h-how">
+  <h2 id="h-how">How it works, in four lines</h2>
+  <div class="panel">
+    <ol class="note" style="margin:0;padding-left:1.2em;display:grid;gap:6px">
+      <li><b>Par:</b> each ground's expected first-innings total, shrunk towards its season and competition when the sample is small.</li>
+      <li><b>Resource curve:</b> expected runs still to come from any state, fitted Duckworth-Lewis style and stretched to the match's par.</li>
+      <li><b>Value of a ball:</b> RAA compares runs with the average from the same state; Impact adds the change in the curve, so wickets cost runs.</li>
+      <li><b>Win probability:</b> projected total over the expected total, raised to a power and checked against outcomes; WPA is each ball's change in it.</li>
+    </ol>
+    <p class="note">Full formulas, our choices where the primer is silent, and known limits are on the <a href="methods.html">Methods</a> page.</p>
+  </div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+Promise.all([LAB.load("model_pro.json"), LAB.load("model_lms.json")]).then(([p, l]) => {
+  const n = Object.values(p.counts).reduce((a, b) => a + b, 0);
+  document.getElementById("stats").innerHTML = [
+    [n.toLocaleString("en-ZA"), "pro T20 matches since 2015"],
+    [p.legal_balls.toLocaleString("en-ZA"), "legal balls"],
+    [l.counts.matches.toLocaleString("en-ZA"), "Last Man Stands matches"],
+    [LAB.f(p.R_full, 0), "runs: average resource of a full T20 innings"],
+  ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+}).catch(e => { document.getElementById("stats").textContent = "Could not load data: " + e.message; });
+</script>
+</body>
+</html>

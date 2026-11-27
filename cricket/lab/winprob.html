@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>T20 Win Probability</title>
+<meta name="description" content="T20 Lab win-probability calculator with leverage, and its calibration on held-out matches.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Tool 3 · Match state</div>
+  <h1>Win probability from the scoreboard</h1>
+  <p class="lead">Only the score, balls left, wickets down and par go in: no player names, no form, no odds. It describes how often sides in this position have won, as a reading of the scoreboard.</p>
+</header>
+<section aria-labelledby="h-calc">
+  <h2 id="h-calc">Calculator</h2>
+  <div class="panel">
+    <div class="controls">
+      <label>Format<select id="fmt"><option value="pro">Pro T20</option><option value="lms">Last Man Stands</option></select></label>
+      <label>Innings<select id="inn"><option value="1">1st (setting)</option><option value="2" selected>2nd (chasing)</option></select></label>
+      <label>Par<input type="number" id="par" value="170"></label>
+      <label id="tgtl">Target<input type="number" id="tgt" value="171"></label>
+      <label>Runs scored<input type="number" id="S" value="100"></label>
+      <label>Overs bowled<input type="number" id="ov" value="14" min="0" max="20" step="1"></label>
+      <label>Balls into the over<input type="number" id="bb" value="0" min="0" max="5" step="1"></label>
+      <label>Wickets down<input type="number" id="w" value="4" min="0" max="9"></label>
+    </div>
+    <div class="stats" id="out"></div>
+    <p class="note" id="explain"></p>
+  </div>
+</section>
+<section aria-labelledby="h-cal">
+  <h2 id="h-cal">Is it calibrated? Held-out check</h2>
+  <p class="intro" id="calintro"></p>
+  <div class="panel">
+    <div class="seg" role="group" aria-label="Innings"><button id="c1" aria-pressed="true">1st innings</button><button id="c2" aria-pressed="false">2nd innings</button></div>
+    <div class="legend"><span><i style="background:var(--pitch)"></i>T20 Lab (Platt-shifted)</span><span><i style="background:var(--amber)"></i>Primer form, n = 6</span><span><i style="background:var(--muted)"></i>perfect calibration</span></div>
+    <div id="rel"></div>
+    <div class="tablewrap" id="caltab"></div>
+  </div>
+</section>
+<section aria-labelledby="h-lev">
+  <h2 id="h-lev">Leverage through the innings</h2>
+  <p class="intro">Leverage is the gap in win probability between a six and a wicket off the next ball, scaled so the average ball of each innings is 1. Lines show the mean by over.</p>
+  <div class="panel"><div class="legend"><span><i style="background:var(--pitch)"></i>1st innings</span><span><i style="background:var(--seam)"></i>2nd innings</span></div><div id="lev"></div></div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const [P, L, V] = await Promise.all([LAB.load("model_pro.json"), LAB.load("model_lms.json"), LAB.load("validation_pro.json")]);
+  const $ = id => document.getElementById(id);
+  function calc() {
+    const M = $("fmt").value === "pro" ? P : L, c = M.curve, bpo = c.B / 20, wp = M.wp;
+    $("w").max = c.W - 1; $("bb").max = bpo - 1;
+    const inn = +$("inn").value; $("tgtl").style.display = inn === 2 ? "" : "none";
+    const par = +$("par").value, lam = LAB.solveLambda(c, par);
+    const S = +$("S").value, w = Math.min(+$("w").value, c.W), b = Math.max(0, c.B - (+$("ov").value * bpo + +$("bb").value));
+    const T = +$("tgt").value;
+    const P_ = (S_, b_, w_) => inn === 1 ? LAB.wp1(c, S_, b_, w_, lam, wp.n1, wp.a1) : LAB.wp2(c, T - S_, b_, w_, lam, wp.n2, wp.a2);
+    const p = P_(S, b, w), p6 = P_(S + 6, b - 1, w), pw = P_(S, b - 1, w + 1), p0 = P_(S, b - 1, w);
+    const lev = (p6 - pw) / M.lbar[String(inn)];
+    const R = LAB.R(c, b, w, lam);
+    $("out").innerHTML = [[LAB.pct(p, 1), `win probability, ${inn === 1 ? "side batting first" : "chasing side"}`],
+      [LAB.f(R, 1), "runs still expected (curve)"], [LAB.sg(100 * (p6 - p), 1) + " / " + LAB.sg(100 * (pw - p), 1), "points: six / wicket next ball"],
+      [LAB.f(lev, 2), "leverage index of the next ball"]].map(([a, s]) => `<div class="stat"><b>${a}</b><span>${s}</span></div>`).join("");
+    $("explain").textContent = inn === 1
+      ? `Projected total ${(S + R).toFixed(0)} against an expected ${LAB.full(c, lam).toFixed(0)} in these conditions (λ = ${lam.toFixed(3)}).`
+      : `${T - S} needed from ${b} balls with ${c.W - w} wickets in hand; the curve says ${R.toFixed(0)} runs of resources remain (λ = ${lam.toFixed(3)}). A dot ball moves it ${LAB.sg(100 * (p0 - p), 1)} points.`;
+  }
+  ["fmt", "inn", "par", "tgt", "S", "ov", "bb", "w"].forEach(id => $(id).addEventListener("input", calc));
+  $("fmt").addEventListener("change", () => { const M = $("fmt").value === "pro" ? P : L; $("par").value = Math.round(M.R_full); $("tgt").value = Math.round(M.R_full) + 1; $("S").value = Math.round(M.R_full * 0.6); calc(); });
+  calc();
+  const C = P.calibration;
+  $("calintro").textContent = `The model was fitted on ${C.train_matches} pro matches and scored on ${C.test_matches} matches it never saw (a random 30% split by match, seed ${C.seed}). Each dot is one of 15 equal-sized groups of balls: predicted win probability against how often that side actually won. The primer's form with n = 6 treats a side exactly at par as a 50% chance, but sides batting first won ${LAB.pct(C.inn1.base_rate)} of these matches, so it ${C.platt.a1 < 0 ? "slightly overrates" : "slightly underrates"} the side batting first; T20 Lab adds a fitted shift (Platt scaling).`;
+  function rel(k) {
+    const d = C[k];
+    LAB.line($("rel"), [{ pts: d.platt.bins.map(b => [b[0], b[1]]), color: "var(--pitch)", dots: true, r: 4 }, { pts: d.n6.bins.map(b => [b[0], b[1]]), color: "var(--amber)", dots: true, r: 3 }],
+      { title: "Reliability diagram", x0: 0, x1: 1, y0: 0, y1: 1, diag: true, xticks: [0, .25, .5, .75, 1], yticks: [0, .25, .5, .75, 1], xfmt: v => (v * 100).toFixed(0) + "%", yfmt: v => (v * 100).toFixed(0) + "%", xlab: "predicted" });
+    $("c1").setAttribute("aria-pressed", k === "inn1"); $("c2").setAttribute("aria-pressed", k === "inn2");
+  }
+  $("c1").onclick = () => rel("inn1"); $("c2").onclick = () => rel("inn2"); rel("inn1");
+  const rows = [];
+  for (const k of ["inn1", "inn2"]) for (const [m, lab] of [["n6", "primer form, n = 6"], ["fitted_n", "fitted n, no shift"], ["platt", "T20 Lab (shift + n)"]])
+    rows.push({ inn: k === "inn1" ? "1st" : "2nd", m: lab, balls: C[k].balls, brier: C[k][m].brier, ll: C[k][m].logloss, auc: C[k][m].auc, ece: C[k][m].ece, nul: C[k].brier_null });
+  rows.push({ inn: "both", m: "T20 Lab", balls: C.inn1.balls + C.inn2.balls, brier: C.both_platt.brier, ll: C.both_platt.logloss, auc: C.both_platt.auc, ece: C.both_platt.ece, nul: null });
+  rows.push({ inn: "both", m: "primer form, n = 6", balls: C.inn1.balls + C.inn2.balls, brier: C.both_n6.brier, ll: C.both_n6.logloss, auc: C.both_n6.auc, ece: C.both_n6.ece, nul: null });
+  LAB.table($("caltab"), [{ k: "inn", t: "Inns" }, { k: "m", t: "Model" }, { k: "balls", t: "Balls" }, { k: "brier", t: "Brier", d: 4 }, { k: "nul", t: "Brier (coin)", d: 4 }, { k: "ll", t: "Log-loss", d: 4 }, { k: "auc", t: "AUC", d: 3 }, { k: "ece", t: "ECE", d: 4 }], rows);
+  const lv = V.leverage_by_over;
+  LAB.line($("lev"), [{ pts: lv["1"].map(r => [r[0] + 1, r[1]]), color: "var(--pitch)" }, { pts: lv["2"].map(r => [r[0] + 1, r[1]]), color: "var(--seam)" }],
+    { title: "Mean leverage index by over", x0: 1, x1: 20, y0: 0, xticks: [1, 6, 11, 16, 20], yticks: [0, 0.5, 1, 1.5], yfmt: v => v.toFixed(1), xlab: "over" });
+})();
+</script>
+</body>
+</html>

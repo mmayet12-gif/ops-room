@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Does It Hold Up</title>
+<meta name="description" content="T20 Lab tests each claim in Ganjoo's T20 primer on held-out Cricsheet and Last Man Stands data, with verdicts, numbers, sample sizes and our own misses.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Checks</div>
+  <h1>Does it hold up?</h1>
+  <p class="lead">Each claim and metric in Ganjoo's primer, tested on our own data. Each verdict follows a rule stated next to its test. "Not confirmed" means our test did not reproduce it, which can be our implementation as much as the claim.</p>
+  <div class="stats" id="sum"></div>
+</header>
+<section aria-labelledby="h-how">
+  <h2 id="h-how">How the testing works</h2>
+  <div class="panel">
+    <ol class="note" style="margin:0;padding-left:1.2em;display:grid;gap:6px">
+      <li><b>Check the data first:</b> match counts, totals that reconcile, what is left out (rain-affected and no-result games are not used for fitting).</li>
+      <li><b>Say what would prove it wrong:</b> each card shows its verdict rule. Two par rules were tightened after a first run, which made our own club-cricket result look worse, not better.</li>
+      <li><b>Hold data out:</b> par, the curve, the RAA baseline and win probability are refitted on a random 70% of matches and scored on the other 30%.</li>
+      <li><b>Report the misses</b>, including ours.</li>
+    </ol>
+  </div>
+</section>
+<section aria-labelledby="h-c">
+  <h2 id="h-c">Claim by claim</h2>
+  <div class="seg" role="group" aria-label="Filter by verdict" id="filt"></div>
+  <div id="claims" style="display:grid;gap:12px"></div>
+</section>
+<section aria-labelledby="h-raa">
+  <h2 id="h-raa">Picture: the RAA baseline on matches it never saw</h2>
+  <p class="intro">First-innings runs per ball by over in the held-out 30% of pro matches. Lines: actual. Dots: what the baseline expected from the game state.</p>
+  <div class="panel"><div class="legend"><span><i style="background:var(--pitch)"></i>par above 185</span><span><i style="background:var(--seam)"></i>par below 160</span></div><div id="raa"></div></div>
+</section>
+<section aria-labelledby="h-par">
+  <h2 id="h-par">Picture: par error on held-out innings</h2>
+  <div class="panel"><div id="parbars"></div><p class="note">Root-mean-square error in runs predicting the first-innings total of unseen matches. Lower is better.</p></div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const [K, V] = await Promise.all([LAB.load("claims.json"), LAB.load("validation_pro.json")]);
+  const $ = id => document.getElementById(id);
+  const cls = v => v === "confirmed" ? "ok" : v === "partly confirmed" ? "part" : v === "not confirmed" ? "no" : "";
+  $("sum").innerHTML = Object.entries(K.summary).map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+  let cur = "all";
+  $("filt").innerHTML = ["all", ...Object.keys(K.summary)].map(k => `<button data-k="${k}" aria-pressed="${k === "all"}">${k}</button>`).join("");
+  $("filt").querySelectorAll("button").forEach(b => b.onclick = () => { cur = b.dataset.k; $("filt").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b)); draw(); });
+  function draw() {
+    $("claims").innerHTML = K.claims.filter(c => cur === "all" || c.verdict === cur).map(c => `<article class="panel">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="eyebrow">${LAB.esc(c.area)}</span><span class="verdict ${cls(c.verdict)}">${LAB.esc(c.verdict)}</span></div>
+      <h3>${LAB.esc(c.claim)}</h3>
+      <dl class="kv"><dt>Test</dt><dd>${LAB.esc(c.test)}</dd><dt>Numbers</dt><dd>${LAB.esc(c.numbers)}</dd><dt>Sample</dt><dd>${LAB.esc(c.n)}</dd><dt>Rule</dt><dd>${LAB.esc(c.rule)}</dd>${c.our_miss ? `<dt>Caveat</dt><dd>${LAB.esc(c.our_miss)}</dd>` : ""}</dl></article>`).join("");
+  }
+  draw();
+  const rh = V.raa_holdout;
+  LAB.line($("raa"), [
+    { pts: rh.high.by_over.map(r => [r[0] + 1, r[2]]), color: "var(--pitch)" }, { pts: rh.high.by_over.map(r => [r[0] + 1, r[3]]), color: "var(--pitch)", dots: true },
+    { pts: rh.low.by_over.map(r => [r[0] + 1, r[2]]), color: "var(--seam)" }, { pts: rh.low.by_over.map(r => [r[0] + 1, r[3]]), color: "var(--seam)", dots: true }],
+    { title: "Actual and expected runs per ball by over", x0: 1, x1: 20, y0: 0.8, y1: 2.2, xticks: [1, 6, 11, 16, 20], yticks: [1, 1.5, 2], yfmt: v => v.toFixed(1), xlab: "over" });
+  const ph = V.par_holdout;
+  LAB.bars($("parbars"), [["Shrunk par", ph.shrunk], ["Raw ground-season", ph.raw_bucket], ["Competition mean", ph.comp_mean], ["One global mean", ph.global]].map(([l, v]) => ({ label: l, v })),
+    { allPos: true, fmt: v => v.toFixed(2), title: "Held-out RMSE of par" });
+})();
+</script>
+</body>
+</html>

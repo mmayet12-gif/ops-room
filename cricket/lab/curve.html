@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Resource Curve and Par</title>
+<meta name="description" content="T20 Lab: the fitted Duckworth-Lewis style resource curve and nested-shrinkage par scores by ground and season.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Tool 1 · Conditions</div>
+  <h1>Resource curve and par scores</h1>
+  <p class="lead">How many more runs does an average side score from here? The curve answers that for every balls-left and wickets-down state. Par says how easy the conditions are; a higher par stretches the curve.</p>
+</header>
+
+<section aria-labelledby="h-curve">
+  <h2 id="h-curve">Runs still to come</h2>
+  <div class="panel">
+    <div class="controls">
+      <label>Format<select id="fmt"><option value="pro">Pro T20 (20 × 6-ball overs, 10 wickets)</option><option value="lms">Last Man Stands (20 × 5-ball overs, 8 wickets)</option></select></label>
+      <label>Match par (expected 1st-innings total) <output id="parv"></output><input type="range" id="par" min="110" max="230" step="1"></label>
+    </div>
+    <p class="note" id="lamnote"></p>
+    <div class="legend" id="leg"></div>
+    <div id="chart"></div>
+    <div class="controls">
+      <label>Overs left<input type="number" id="ov" min="0" max="20" step="1" value="14"></label>
+      <label>Wickets down<input type="number" id="wk" min="0" max="9" step="1" value="2"></label>
+    </div>
+    <p id="readout" class="note"></p>
+  </div>
+</section>
+
+<section aria-labelledby="h-dl">
+  <h2 id="h-dl">Against the published Duckworth-Lewis table</h2>
+  <p class="intro">Resources as % of a full innings at par = average conditions. Left number: this fit (pro T20, 2015 onwards). Right: the DL Standard Edition (2008-09) rescaled to 20 overs by Bhattacharya, Gill and Swartz. Our curve keeps more value with wickets in hand and gives tail-enders less.</p>
+  <div class="tablewrap" id="dl"></div>
+</section>
+
+<section aria-labelledby="h-par">
+  <h2 id="h-par">Par by ground and season</h2>
+  <p class="intro">Par is the raw first-innings average pulled towards the season average, by an amount that depends on how many innings the ground has had (n) and how noisy totals are (k). Small n: trust the parent; large n: trust the ground.</p>
+  <div class="panel">
+    <div class="controls">
+      <label>Competition<select id="comp"></select></label>
+      <label>Season<select id="season"></select></label>
+      <label>Ground contains<input type="search" id="q" placeholder="e.g. Wankhede"></label>
+    </div>
+    <p class="note" id="parhead"></p>
+    <div class="tablewrap" id="partab"></div>
+  </div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const [P, L, V] = await Promise.all([LAB.load("model_pro.json"), LAB.load("model_lms.json"), LAB.load("validation_pro.json")]);
+  const $ = id => document.getElementById(id);
+  const cols = ["#1b6b49", "#2f8a5f", "#4aa374", "#73b98c", "#a3cf9f", "#d9c27a", "#e3a35a", "#de7a4a", "#c4382b", "#8a2a20"];
+  function draw() {
+    const M = $("fmt").value === "pro" ? P : L, c = M.curve, bpo = c.B / 20;
+    if (!$("par").dataset.set || $("par").dataset.fmt !== $("fmt").value) {
+      $("par").value = Math.round(M.R_full); $("par").dataset.set = 1; $("par").dataset.fmt = $("fmt").value;
+      $("wk").max = c.W - 1;
+    }
+    const par = +$("par").value, lam = LAB.solveLambda(c, par);
+    $("parv").textContent = par;
+    $("lamnote").textContent = `λ = ${lam.toFixed(3)} (λ = 1 is average conditions, full-innings resource ${M.R_full.toFixed(1)} runs). Fitted n0 = ${c.n0.toFixed(3)}, so a higher par mostly scales the curve up rather than reshaping it.`;
+    const series = [];
+    for (let w = 0; w < c.W; w++) {
+      const pts = [];
+      for (let o = 0; o <= 20; o += 0.5) pts.push([o, LAB.R(c, o * bpo, w, lam)]);
+      series.push({ pts, color: cols[Math.round(w * 9 / (c.W - 1))], w: w === 0 ? 2.5 : 1.6 });
+    }
+    $("leg").innerHTML = series.map((s, w) => `<span><i style="background:${s.color}"></i>${w} down</span>`).join("");
+    LAB.line($("chart"), series, { title: "Expected runs still to come by overs left and wickets down", x0: 0, x1: 20, y0: 0, xticks: [0, 5, 10, 15, 20], xlab: "overs left", yticks: [0, 50, 100, 150, 200].filter(v => v <= Math.max(...series[0].pts.map(p => p[1])) + 20) });
+    const ov = Math.min(20, Math.max(0, +$("ov").value)), wk = Math.min(c.W - 1, Math.max(0, +$("wk").value));
+    const b = ov * bpo, r0 = LAB.R(c, b, wk, lam), r1 = LAB.R(c, b - 1, wk, lam), rw = LAB.R(c, b - 1, wk + 1, lam);
+    $("readout").innerHTML = `From ${ov} overs left and ${wk} down: <b>${r0.toFixed(1)}</b> more runs expected (${(100 * r0 / LAB.full(c, lam)).toFixed(1)}% of a full innings). The next ball is worth: dot <b>${LAB.sg(r1 - r0, 2)}</b>, single <b>${LAB.sg(1 + r1 - r0, 2)}</b>, four <b>${LAB.sg(4 + r1 - r0, 2)}</b>, six <b>${LAB.sg(6 + r1 - r0, 2)}</b>, wicket <b>${LAB.sg(rw - r0, 2)}</b> runs of Impact.`;
+  }
+  ["fmt", "par", "ov", "wk"].forEach(id => $(id).addEventListener("input", draw));
+  draw();
+  // DL table
+  const dl = V.curve_vs_dl;
+  $("dl").innerHTML = `<table><thead><tr><th>Overs left</th>${[...Array(10).keys()].map(w => `<th>${w} down</th>`).join("")}</tr></thead><tbody>${Object.keys(dl).sort((a, b) => b - a).map(o => `<tr><td>${o}</td>${dl[o].map(([a, d]) => `<td>${a.toFixed(1)} <span class="note">/ ${d.toFixed(1)}</span></td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  // par
+  const rows = P.par.venues.map(r => ({ comp: r[0], season: r[1], venue: r[2], n: r[3], raw: r[4], par: r[5], k: r[6] }));
+  const comps = [...new Set(rows.map(r => r.comp))];
+  $("comp").innerHTML = comps.map(c => `<option>${c}</option>`).join("");
+  function seasons() {
+    const ss = [...new Set(rows.filter(r => r.comp === $("comp").value).map(r => r.season))].sort().reverse();
+    $("season").innerHTML = `<option value="">All seasons</option>` + ss.map(s => `<option>${s}</option>`).join("");
+  }
+  function partab() {
+    const c = $("comp").value, s = $("season").value, q = $("q").value.toLowerCase();
+    const rs = rows.filter(r => r.comp === c && (!s || r.season === s) && (!q || r.venue.toLowerCase().includes(q)))
+      .map(r => ({ ...r, shrink: r.par - r.raw }));
+    const sp = P.par.seasons.find(x => x[0] === c && x[1] === s);
+    $("parhead").textContent = `Competition par ${P.par.comps[c]} (global ${P.par.global})` + (sp ? `; ${s} season par ${sp[2]}` : "") + `. ${rs.length} ground-seasons shown.`;
+    LAB.table($("partab"), [{ k: "venue", t: "Ground" }, { k: "season", t: "Season" }, { k: "n", t: "n" }, { k: "raw", t: "Raw mean", d: 1 }, { k: "par", t: "Par", d: 1 }, { k: "shrink", t: "Shrink", d: 1, sign: true }, { k: "k", t: "k", d: 1 }], rs, { sort: "par", limit: 150 });
+  }
+  $("comp").onchange = () => { seasons(); partab(); };
+  $("season").onchange = partab; $("q").oninput = partab;
+  seasons(); partab();
+})().catch(e => document.querySelector("main, .wrap").insertAdjacentHTML("beforeend", `<p class="note">Could not load data: ${e.message}</p>`));
+</script>
+</body>
+</html>

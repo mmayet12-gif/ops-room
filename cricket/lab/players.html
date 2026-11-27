@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>T20 Lab Players</title>
+<meta name="description" content="T20 Lab player tables: RAA, WAA, Impact, WPA, leverage and clutch for T20Is, IPL, BBL, PSL and SA20.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Tool 2 · Players</div>
+  <h1>Runs, wickets and wins above average</h1>
+  <p class="lead">Every ball is compared with what an average player does from the same game state and conditions. Positive is better than average, for batters and bowlers alike.</p>
+</header>
+<section aria-labelledby="h-t">
+  <h2 id="h-t">Player table</h2>
+  <div class="panel">
+    <div class="controls">
+      <label>Competition<select id="comp"><option>IPL</option><option>T20I</option><option>BBL</option><option>PSL</option><option>SA20</option></select></label>
+      <label>Season<select id="season"></select></label>
+      <label>Role<select id="role"><option value="bat">Batting</option><option value="bowl">Bowling</option></select></label>
+      <label>Player contains<input type="search" id="q"></label>
+    </div>
+    <p class="note" id="head"></p>
+    <div class="tablewrap" id="tab" style="max-height:70vh"></div>
+    <details><summary>What the columns mean</summary>
+      <dl class="kv" style="margin-top:8px">
+        <dt>RAA</dt><dd>Runs above average: runs minus the expected runs for the same balls left, wickets down, par/target and innings. Bowlers: expected runs conceded minus actual.</dd>
+        <dt>WAA</dt><dd>Wickets above average. Batters: expected dismissals minus actual (positive = got out less). Bowlers: wickets minus expected.</dd>
+        <dt>/100</dt><dd>Per 100 balls faced or bowled.</dd>
+        <dt>Impact, IR</dt><dd>Runs added using the resource curve, so a wicket costs runs; IR is Impact per 100 balls.</dd>
+        <dt>WPA</dt><dd>Win probability added, summed over the player's balls; roughly "matches won".</dd>
+        <dt>pLI</dt><dd>Average leverage of the player's balls (1 = an average ball of that innings).</dd>
+        <dt>Clutch</dt><dd>T20 Lab definition (the primer has none yet): WPA / pLI minus context-neutral WPA. Shown only with 300+ balls and 50+ high-leverage balls.</dd>
+        <dt>Hi−Lo</dt><dd>Impact per 100 balls when leverage &gt; 1.5 minus when leverage &lt; 1 (50+ balls of each).</dd>
+      </dl>
+    </details>
+  </div>
+</section>
+<section aria-labelledby="h-q">
+  <h2 id="h-q">Style map: RAA/100 against WAA/100</h2>
+  <p class="intro">Right = scores faster than average from the same states; up = gets out (or takes wickets) less (more) than average. The primer's four quadrants: aggressive and safe (top right), aggressive and risky (bottom right), conservative (top left), poor (bottom left). Players with fewer balls than the threshold are hidden.</p>
+  <div class="panel"><div id="quad"></div><p class="note" id="quadnote"></p></div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  let D = null;
+  async function loadComp() {
+    D = await LAB.load(`players_${$("comp").value.toLowerCase()}.json`);
+    const ss = [...new Set(D.rows.map(r => r[1]))].filter(s => s !== "all").sort().reverse();
+    $("season").innerHTML = `<option value="all">All seasons since 2015 (300+ balls)</option>` + ss.map(s => `<option value="${s}">${s} (100+ balls)</option>`).join("");
+    $("season").value = ss[0];
+    draw();
+  }
+  function draw() {
+    const role = $("role").value, s = $("season").value, q = $("q").value.toLowerCase();
+    const cols = (role === "bat" ? D.bat_cols : D.bowl_cols);
+    const rows = D.rows.filter(r => r[0] === role && r[1] === s && (!q || r[2].toLowerCase().includes(q)))
+      .map(r => Object.fromEntries(cols.map((c, i) => [c, r[i]])));
+    $("head").textContent = `${rows.length} ${role === "bat" ? "batters" : "bowlers"}, ${$("comp").value} ${s === "all" ? "2015 onwards" : s}. Tap a column to sort.`;
+    const C = role === "bat"
+      ? [{ k: "player", t: "Batter" }, { k: "inns", t: "Inns" }, { k: "balls", t: "Balls" }, { k: "runs", t: "Runs" }, { k: "sr", t: "SR", d: 1 }, { k: "raa", t: "RAA", d: 1, sign: true }, { k: "waa", t: "WAA", d: 2, sign: true }, { k: "raa100", t: "RAA/100", d: 1, sign: true }, { k: "waa100", t: "WAA/100", d: 2, sign: true }, { k: "imp", t: "Impact", d: 1, sign: true }, { k: "ir", t: "IR", d: 1, sign: true }, { k: "wpa", t: "WPA", d: 2, sign: true }, { k: "pli", t: "pLI", d: 2 }, { k: "clutch", t: "Clutch", d: 2, sign: true }, { k: "hilo", t: "Hi−Lo", d: 1, sign: true }]
+      : [{ k: "player", t: "Bowler" }, { k: "inns", t: "Inns" }, { k: "balls", t: "Balls" }, { k: "wkts", t: "Wkts" }, { k: "econ", t: "Econ", d: 2 }, { k: "raa", t: "RAA", d: 1, sign: true }, { k: "waa", t: "WAA", d: 2, sign: true }, { k: "raa100", t: "RAA/100", d: 1, sign: true }, { k: "waa100", t: "WAA/100", d: 2, sign: true }, { k: "imp", t: "Impact", d: 1, sign: true }, { k: "ir", t: "IR", d: 1, sign: true }, { k: "wpa", t: "WPA", d: 2, sign: true }, { k: "pli", t: "pLI", d: 2 }, { k: "clutch", t: "Clutch", d: 2, sign: true }, { k: "hilo", t: "Hi−Lo", d: 1, sign: true }];
+    LAB.table($("tab"), C, rows, { sort: "imp" });
+    // quadrant
+    const pts = rows.filter(r => r.raa100 !== undefined);
+    const W = 360, H = 300, pad = 30;
+    const xm = Math.max(1, ...pts.map(p => Math.abs(p.raa100))), ym = Math.max(0.5, ...pts.map(p => Math.abs(p.waa100)));
+    const X = x => W / 2 + x / xm * (W / 2 - pad), Y = y => H / 2 - y / ym * (H / 2 - pad);
+    const top = new Set(pts.slice().sort((a, b) => b.imp - a.imp).slice(0, 6).map(p => p.player));
+    let svg = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="RAA per 100 balls against WAA per 100 balls"><line class="axis" x1="${pad}" x2="${W - pad}" y1="${H / 2}" y2="${H / 2}"/><line class="axis" x1="${W / 2}" x2="${W / 2}" y1="${pad}" y2="${H - pad}"/>`;
+    svg += `<text x="${W - pad}" y="${H / 2 - 6}" text-anchor="end">RAA/100 +</text><text x="${W / 2 + 4}" y="${pad - 8}">WAA/100 +</text><text x="${W - pad}" y="${pad}" text-anchor="end">${role === "bat" ? "aggressive, safe" : "cheap, wicket-taking"}</text><text x="${pad}" y="${H - pad + 16}">${role === "bat" ? "poor" : "expensive, few wickets"}</text>`;
+    pts.forEach(p => { svg += `<circle cx="${X(p.raa100).toFixed(1)}" cy="${Y(p.waa100).toFixed(1)}" r="${top.has(p.player) ? 4 : 2.6}" fill="${top.has(p.player) ? "var(--seam)" : "var(--pitch)"}" opacity=".75"><title>${LAB.esc(p.player)}: RAA/100 ${LAB.sg(p.raa100)}, WAA/100 ${LAB.sg(p.waa100, 2)}, ${p.balls} balls</title></circle>`; });
+    pts.filter(p => top.has(p.player)).forEach(p => { svg += `<text class="val" x="${(X(p.raa100) + (X(p.raa100) > W - 110 ? -6 : 6)).toFixed(1)}" y="${(Y(p.waa100) + 4).toFixed(1)}" text-anchor="${X(p.raa100) > W - 110 ? "end" : "start"}">${LAB.esc(p.player)}</text>`; });
+    $("quad").innerHTML = svg + "</svg>";
+    $("quadnote").textContent = `${pts.length} players; red = top 6 by Impact. Axis ranges: ±${xm.toFixed(1)} runs and ±${ym.toFixed(2)} wickets per 100 balls.`;
+  }
+  $("comp").onchange = loadComp; ["season", "role"].forEach(id => $(id).onchange = draw); $("q").oninput = draw;
+  loadComp();
+})();
+</script>
+</body>
+</html>

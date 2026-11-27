@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Game LMS</title>
+<meta name="description" content="T20 Lab on my Last Man Stands games: spell length, batting in context, team plan checks and workload, using the primer's methods refitted for 8-a-side, 5-ball-over cricket.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Club cricket · Last Man Stands</div>
+  <h1>My game, in context</h1>
+  <p class="lead">Last Man Stands is 8 a side, 20 overs of 5 balls, and the last batter can bat alone. The same par, curve, RAA, Impact and win-probability methods are refitted on Johannesburg/Sandton league games, then used to look at my bowling and batting and my team's plan. Small samples throughout: read these as descriptions, not verdicts.</p>
+  <div class="stats" id="stats"></div>
+</header>
+
+<section aria-labelledby="h-len">
+  <h2 id="h-len">Why are my spells short?</h2>
+  <p class="intro">"Short" here means overs per game. (The data has no ball tracking, so it cannot say anything about the length I pitch the ball.) What the scorebook can show is how many overs I get, when, and how they went compared with the rest of our attack. It cannot show the captain's reasons.</p>
+  <div class="panel">
+    <div class="stats" id="lenstats"></div>
+    <h3>Overs I bowled in the games I played</h3><div id="lendist"></div>
+    <h3>Per over: me against the rest of our attack</h3><div class="tablewrap" id="lentab"></div>
+    <h3>Runs by my 1st, 2nd, 3rd and 4th over of a game</h3><div id="spell"></div>
+    <p class="note" id="lenread"></p>
+  </div>
+</section>
+
+<section aria-labelledby="h-bat">
+  <h2 id="h-bat">My batting in context</h2>
+  <div class="panel"><div class="stats" id="batstats"></div><p class="note" id="batread"></p></div>
+</section>
+
+<section aria-labelledby="h-plan">
+  <h2 id="h-plan">Team plan checks</h2>
+  <p class="intro">Our pre-game plan, checked against every game the team played in the data. Players are described by their plan role only.</p>
+  <div class="panel"><div class="tablewrap" id="plantab"></div><p class="note" id="plannote"></p></div>
+</section>
+
+<section aria-labelledby="h-work">
+  <h2 id="h-work">Workload and how I bowled</h2>
+  <p class="intro">Does bowling more in the previous two weeks, or a short gap between games, go with a more expensive day? Each dot is a game where I bowled at least one over.</p>
+  <div class="panel"><div id="work"></div><p class="note" id="workread"></p></div>
+</section>
+
+<section aria-labelledby="h-fmt">
+  <h2 id="h-fmt">The format itself</h2>
+  <div class="panel"><div class="stats" id="fmtstats"></div><div class="tablewrap" id="divtab"></div><p class="note">Division par = shrunk average first-innings total. Grounds are not named in the feed.</p></div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const [M, L, VL] = await Promise.all([LAB.load("lms_me.json"), LAB.load("model_lms.json"), LAB.load("validation_lms.json")]);
+  const $ = id => document.getElementById(id);
+  const st = (el, xs) => $(el).innerHTML = xs.map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+  const BL = M.bowling_length, played = M.matches.filter(r => r.played);
+  st("stats", [[BL.team_matches, "team games with ball-by-ball data"], [played.length, "games I played"], [BL.matches_bowled, "games I bowled"], [BL.my_balls, "balls I bowled"]]);
+  st("lenstats", [[LAB.f(BL.my_overs_per_match, 2), "my overs per game played"], [LAB.f(BL.attack_mean_overs_per_bowler, 2), "overs per bowler, our attack"], [LAB.f(BL.league_median_overs_per_bowler, 0), "league median overs per bowler"]]);
+  const dist = BL.my_overs_dist;
+  LAB.bars($("lendist"), dist.map(([k, v]) => ({ label: `${k} over${k === 1 ? "" : "s"}`, v })), { allPos: true, fmt: v => v + (v === 1 ? " game" : " games"), title: "Games by overs bowled" });
+  const rows = [
+    { k: "Runs per over", me: BL.my_rpo, rest: BL.rest_rpo },
+    { k: "RAA per over (+ = cheaper than expected)", me: BL.my_raa_per_over, rest: BL.rest_raa_per_over },
+    { k: "Impact per over (+ = helped us)", me: BL.my_imp_per_over, rest: BL.rest_imp_per_over },
+    { k: "Wides / no-balls per over", me: BL.my_extras_per_over, rest: BL.rest_extras_per_over }];
+  LAB.table($("lentab"), [{ k: "k", t: "Measure" }, { k: "me", t: "Me", d: 2 }, { k: "rest", t: "Rest of attack", d: 2 }], rows);
+  LAB.bars($("spell"), BL.by_spell_over.map(([k, n, v]) => ({ label: `over ${k} (n=${n})`, v })), { allPos: true, fmt: v => v.toFixed(1) + " runs", title: "Runs by spell over" });
+  const ph = BL.phase_overs, tot = Object.values(ph).reduce((a, b) => a + b, 0);
+  const diffImp = BL.my_imp_per_over - BL.rest_imp_per_over;
+  $("lenread").textContent = `I bowled ${tot} overs: ${ph.PP || 0} in overs 1-5, ${ph.MID || 0} in overs 6-14 and ${ph.D || 0} in overs 15-20. When I play I average ${LAB.f(BL.my_overs_per_match, 2)} overs against ${LAB.f(BL.attack_mean_overs_per_bowler, 2)} for a bowler in our attack. My overs cost ${LAB.f(BL.my_rpo, 2)} runs against ${LAB.f(BL.rest_rpo, 2)} for the rest, and ${LAB.sg(diffImp, 2)} Impact per over relative to them. My last over of a game went for ${LAB.f(BL.last_over_runs, 1)} runs on average against ${LAB.f(BL.earlier_overs_runs, 1)} for my earlier overs (${BL.n_last_over} games with 2+ overs)${Math.abs(BL.last_over_runs - BL.earlier_overs_runs) < 1 ? ", so there is no clear sign that a spell ended because of one expensive over" : ""}. Most of my overs come in the middle phase${diffImp < 0 ? ", and they have cost the side more (by Impact) than the rest of the attack's" : ""}. ${BL.matches_bowled} games is a small sample, and the data cannot show the captain's reasoning (match-ups, who else is available, the plan for the death).`;
+  const B = M.bat_agg, C = M.context;
+  if (B) {
+    st("batstats", [[B.balls, "balls faced"], [LAB.f(B.sr, 0), "strike rate"], [LAB.sg(B.raa100, 1), "RAA per 100 balls"], [LAB.sg(B.imp, 1), "Impact (runs added)"]]);
+    const entries = played.filter(r => r.bat && r.bat.in_w !== null);
+    const avgW = entries.length ? entries.reduce((a, r) => a + r.bat.in_w, 0) / entries.length : null;
+    const avgB = entries.length ? entries.reduce((a, r) => a + r.bat.in_b, 0) / entries.length : null;
+    $("batread").textContent = `${B.inns} innings, ${B.balls} balls: far too few to separate skill from noise. I usually came in at about ${LAB.f(avgW, 1)} down with about ${LAB.f(avgB, 0)} balls left, the hardest spot to score from; RAA already allows for that state, and comes out at ${LAB.sg(B.raa100, 1)} per 100 balls. Of ${C.n_bat_qual} league batters with 100+ balls, my strike rate would rank ${C.bat_pct.sr === 0 ? "lowest" : "above " + C.bat_pct.sr + "% of them"}, but I am below their 100-ball minimum, so this is a rough comparison. (Batting figures here cover all my LMS innings in the data.)`;
+  }
+  const P = M.plan_summary, lab = M.plan_labels;
+  if (P) {
+    const pc = (a, b) => b ? `${a} of ${b} (${Math.round(100 * a / b)}%)` : "–";
+    LAB.table($("plantab"), [{ k: "c", t: "Plan item" }, { k: "r", t: "What happened", fmt: v => LAB.esc(v) }], [
+      { c: `Overs 1-5 bowled by ${lab.pp}`, r: pc(P.pp[0], P.pp[1]) },
+      { c: `Over after a wicket bowled by ${lab.after_wicket}`, r: pc(P.after_wkt[0], P.after_wkt[1]) },
+      { c: `Overs 15-20 bowled by ${lab.death}`, r: pc(P.death[0], P.death[1]) + `; death overs went for ${LAB.f(P.death_rpo, 2)} an over` },
+      { c: `Wides/no-balls per over, ${lab.extras_watch}`, r: `${LAB.f(P.extras_watch_per_over, 2)} (across ${P.extras_watch_overs} overs) v ${LAB.f(P.extras_rest_per_over, 2)} for everyone else (${P.extras_rest_overs} overs)` },
+      { c: "Win rate when the top three make 90+", r: `${pc(P.top3_90_plus[0], P.top3_90_plus[1])} won, against ${pc(P.top3_under_90[0], P.top3_under_90[1])} when they don't` },
+      { c: "Top three's share of runs off the bat", r: LAB.pct(P.top3_share) },
+      { c: `Strike rate of ${lab.sr_watch}: first 10 balls v after`, r: `${LAB.f(P.watch_sr_first10, 0)} (${P.watch_balls_first10} balls) v ${LAB.f(P.watch_sr_after10, 0)} (${P.watch_balls_after10} balls)` },
+    ]);
+    $("plannote").textContent = `${P.matches} completed team games. Batting order is taken as the order batters first appear. "Overs 1-5 by plan" counts an over if one of the planned bowlers bowled in it. Dismissals across the line against spin cannot be checked: the feed has no bowler type or shot data.`;
+  }
+  const W = M.workload;
+  LAB.line($("work"), [{ pts: W.points.map(p => [p.load14, p.rpo]), color: "var(--pitch)", dots: true, r: 4 }],
+    { title: "Balls in the previous 14 days against runs per over", x0: 0, y0: 0, xlab: "my balls (bowled + faced) in the previous 14 days", yfmt: v => v.toFixed(0) });
+  $("workread").textContent = `Rank correlation (Spearman) with runs per over: previous-14-day load ${LAB.sg(W.rho_load14_rpo, 2)}, days since the last game ${LAB.sg(W.rho_days_rpo, 2)}; load against Impact per over ${LAB.sg(W.rho_load14_imp, 2)}. With ${W.n} games, a correlation needs to be bigger than about ${LAB.f(1.96 / Math.sqrt(Math.max(W.n - 1, 1)), 2)} in size before it stands out from chance${[W.rho_load14_rpo, W.rho_days_rpo, W.rho_load14_imp].every(x => x === null || Math.abs(x) < 1.96 / Math.sqrt(Math.max(W.n - 1, 1))) ? ", so the data shows no workload link either way" : ""}.`;
+  const cnt = L.counts;
+  st("fmtstats", [[cnt.matches, "LMS games cached"], [cnt.clean_reconciled, "used for fitting"], [LAB.f(L.R_full, 0), "runs: full-innings resource"], [LAB.f(VL.calibration.both_platt.ece, 3), "held-out calibration error"]]);
+  const div = Object.entries(L.par.leagues).map(([k, [p, n]]) => ({ d: k, p, n }));
+  LAB.table($("divtab"), [{ k: "d", t: "Division" }, { k: "n", t: "Innings" }, { k: "p", t: "Par", d: 1 }], div, { sort: "p" });
+})();
+</script>
+</body>
+</html>
