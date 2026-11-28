@@ -43,10 +43,29 @@
   <h2 id="h-par">Picture: par error on held-out innings</h2>
   <div class="panel"><div id="parbars"></div><p class="note">Root-mean-square error in runs predicting the first-innings total of unseen matches. Lower is better.</p></div>
 </section>
+<section id="odi" aria-labelledby="h-odi">
+  <h2 id="h-odi">ODI: does it hold up?</h2>
+  <p class="intro">The primer's method was built for T20. We applied the same par shrinkage, resource curve and win probability to men's ODIs between full members and tested each part on held-out matches, with the verdict rule written next to each test. Tool and charts: <a href="odi.html">ODI Lab</a>.</p>
+  <div class="stats" id="odisum"></div>
+  <p class="note" id="odisample"></p>
+  <div id="odiclaims" style="display:grid;gap:12px"></div>
+  <div class="panel"><h3>Our own misses and limits (ODI)</h3><ul class="note" id="odimiss" style="margin:0;padding-left:1.2em;display:grid;gap:6px"></ul></div>
+</section>
 <footer id="foot"></footer>
 </div>
 <script>
 (async () => {
+  const $o = id => document.getElementById(id);
+  const ocls = v => v === "confirmed" ? "ok" : v === "partly confirmed" ? "part" : v === "not confirmed" ? "no" : "";
+  LAB.load("odi.json").then(O => {
+    $o("odisum").innerHTML = Object.entries(O.summary).map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+    $o("odisample").textContent = "Sample: " + O.sample.text;
+    $o("odiclaims").innerHTML = O.claims.map(c => `<article class="panel">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="eyebrow">ODI · ${LAB.esc(c.area)}</span><span class="verdict ${ocls(c.verdict)}">${LAB.esc(c.verdict)}</span></div>
+      <h3>${LAB.esc(c.claim)}</h3>
+      <dl class="kv"><dt>Test</dt><dd>${LAB.esc(c.test)}</dd><dt>Numbers</dt><dd>${LAB.esc(c.numbers)}</dd><dt>Sample</dt><dd>${LAB.esc(c.n)}</dd><dt>Rule</dt><dd>${LAB.esc(c.rule)}</dd>${c.our_miss ? `<dt>Caveat</dt><dd>${LAB.esc(c.our_miss)}</dd>` : ""}</dl></article>`).join("");
+    $o("odimiss").innerHTML = O.misses.map(t => `<li>${LAB.esc(t)}</li>`).join("");
+  }).catch(e => { $o("odisum").textContent = "Could not load ODI data: " + e.message; });
   const [K, V] = await Promise.all([LAB.load("claims.json"), LAB.load("validation_pro.json")]);
   const $ = id => document.getElementById(id);
   const cls = v => v === "confirmed" ? "ok" : v === "partly confirmed" ? "part" : v === "not confirmed" ? "no" : "";

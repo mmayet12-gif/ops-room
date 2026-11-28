@@ -4,7 +4,7 @@ const LAB = (() => {
   const PAGES = [
     ["index.html", "Lab"], ["curve.html", "Resource curve & par"], ["players.html", "Players"],
     ["winprob.html", "Win probability"], ["matches.html", "Match cards"], ["validation.html", "Does it hold up?"],
-    ["my-game.html", "My game (LMS)"], ["methods.html", "Methods"],
+    ["my-game.html", "My game (LMS)"], ["odi.html", "ODI"], ["methods.html", "Methods"],
   ];
   const cache = {};
   function load(name) {

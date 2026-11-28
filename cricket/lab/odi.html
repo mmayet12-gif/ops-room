@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ODI Lab</title>
+<meta name="description" content="ODI Lab: Ganjoo's par, resource-curve and win-probability method applied to One-Day Internationals and tested on held-out matches, with South Africa and Bangladesh against par by phase and a Buffalo Park venue card.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="lab.css">
+<script src="lab.js"></script>
+</head>
+<body>
+<div class="wrap">
+<nav class="topnav" id="nav" aria-label="T20 Lab pages"></nav>
+<header class="hero">
+  <div class="eyebrow">Tool 7 · One-Day Internationals</div>
+  <h1>ODI Lab: the same method at 50 overs</h1>
+  <p class="lead">Ganjoo's primer was written for T20. Here the same three building blocks (shrunk par scores, a Duckworth-Lewis style resource curve, and win probability from the curve) are refitted on men's ODIs and tested on matches the fit never saw.</p>
+  <div class="stats" id="stats"><span class="loading">Loading the numbers…</span></div>
+  <p class="note" id="sample"></p>
+</header>
+
+<section aria-labelledby="h-curve">
+  <h2 id="h-curve">1 · Resource curve: how much innings is left?</h2>
+  <p class="intro" id="curveintro"></p>
+  <div class="panel">
+    <div class="legend"><span><i style="background:var(--pitch)"></i>0 down</span><span><i style="background:var(--amber)"></i>2 down</span><span><i style="background:var(--seam)"></i>4 down</span><span><i style="background:var(--ink)"></i>6 down</span><span>solid: ODI Lab fit · dashed: DL Standard shape</span></div>
+    <div id="curvechart"></div>
+    <p class="note">Share of a full innings' expected runs still to come, by overs left. The DL values are a third-party fit to the public Standard Edition table, not the Professional Edition used in matches (which is not published).</p>
+    <details><summary>Show the table (ours / DL, % of a full innings)</summary><div class="tablewrap" id="restab"></div><p class="note" id="resnote"></p></details>
+  </div>
+</section>
+
+<section aria-labelledby="h-ball">
+  <h2 id="h-ball">2 · What is one ball worth?</h2>
+  <p class="intro">Impact, the primer's runs added: the runs off the ball plus the change in expected runs still to come. A wicket costs the runs the curve says that wicket would have helped make.</p>
+  <div class="panel">
+    <div class="controls">
+      <label>Par (first-innings total)<input type="number" id="bpar" value="268"></label>
+      <label>Overs bowled<input type="number" id="bov" value="10" min="0" max="49"></label>
+      <label>Wickets down<input type="number" id="bw" value="2" min="0" max="9"></label>
+    </div>
+    <div class="stats" id="bout"></div>
+    <p class="note" id="bexplain"></p>
+  </div>
+</section>
+
+<section aria-labelledby="h-wp">
+  <h2 id="h-wp">3 · Win probability from the scoreboard</h2>
+  <p class="intro">Score, balls left, wickets down and par only: no players, no form, no odds. It reads the scoreboard; it does not forecast a match.</p>
+  <div class="panel">
+    <div class="controls">
+      <label>Innings<select id="inn"><option value="1">1st (setting)</option><option value="2" selected>2nd (chasing)</option></select></label>
+      <label>Par<input type="number" id="par" value="268"></label>
+      <label id="tgtl">Target<input type="number" id="tgt" value="269"></label>
+      <label>Runs scored<input type="number" id="S" value="150"></label>
+      <label>Overs bowled<input type="number" id="ov" value="30" min="0" max="49"></label>
+      <label>Wickets down<input type="number" id="w" value="3" min="0" max="9"></label>
+    </div>
+    <div class="stats" id="out"></div>
+    <p class="note" id="explain"></p>
+  </div>
+  <div class="panel">
+    <h3>Calibration on held-out ODIs</h3>
+    <p class="note" id="calintro"></p>
+    <div class="seg" role="group" aria-label="Innings"><button id="c1" aria-pressed="true">1st innings</button><button id="c2" aria-pressed="false">2nd innings</button></div>
+    <div class="legend"><span><i style="background:var(--pitch)"></i>ODI Lab (fitted n + shift)</span><span><i style="background:var(--amber)"></i>primer form, n = 6</span><span><i style="background:var(--muted)"></i>perfect calibration</span></div>
+    <div id="rel"></div>
+    <div class="tablewrap" id="caltab"></div>
+  </div>
+</section>
+
+<section aria-labelledby="h-par">
+  <h2 id="h-par">4 · Par by phase</h2>
+  <p class="intro">Expected first-innings runs in overs 1-10, 11-40 and 41-50, shrunk from the ground to the year to all ODIs with the T20 engine's rule (weight n / (n + k), k from within- and between-bucket variance).</p>
+  <div class="panel"><div id="parbars"></div><div class="tablewrap" id="partab"></div><p class="note" id="parnote"></p></div>
+  <details class="panel"><summary>Par by year (all grounds)</summary><div class="tablewrap" id="yeartab"></div></details>
+</section>
+
+<section aria-labelledby="h-venue">
+  <h2 id="h-venue">5 · Venue card: Buffalo Park, East London</h2>
+  <p class="intro" id="venueintro"></p>
+  <div class="panel"><div class="stats" id="vstats"></div><div class="tablewrap" id="vtab"></div><div class="tablewrap" id="vphase"></div><p class="note" id="vnote"></p></div>
+</section>
+
+<section aria-labelledby="h-teams">
+  <h2 id="h-teams">6 · South Africa and Bangladesh against par, by phase, since 2024</h2>
+  <p class="intro" id="teamintro"></p>
+  <div class="seg" role="group" aria-label="Team" id="tsel"></div>
+  <div class="panel"><h3 id="tbath">Batting</h3><div class="tablewrap" id="tbat"></div></div>
+  <div class="panel"><h3>Bowling (runs and wickets conceded)</h3><div class="tablewrap" id="tbowl"></div><p class="note" id="tnote"></p></div>
+</section>
+
+<section aria-labelledby="h-val">
+  <h2 id="h-val">Does it hold up in ODIs?</h2>
+  <div class="panel"><div class="stats" id="vsum"></div><p class="note">Every claim, its test, the numbers, the sample and our own misses are on <a href="validation.html#odi">Does it hold up? (ODI section)</a>.</p></div>
+</section>
+<footer id="foot"></footer>
+</div>
+<script>
+(async () => {
+  const $ = id => document.getElementById(id);
+  let D;
+  try { D = await LAB.load("odi.json"); } catch (e) { $("stats").textContent = "Could not load data: " + e.message; return; }
+  const c = D.curve, PH = { P1: "Overs 1-10", P2: "Overs 11-40", P3: "Overs 41-50" };
+  const ex = D.examples.rows[0], wp = D.wp, ho = D.wp_holdout;
+  $("stats").innerHTML = [
+    [D.sample.since_rules.toLocaleString("en-ZA"), "full-member men's ODIs since July 2015"],
+    [D.sample.clean.toLocaleString("en-ZA"), "used for fitting (no rain revision)"],
+    [LAB.f(D.fit.R_full, 0), "runs: resource of a full ODI innings"],
+    [LAB.f(-ex.wicket, 1), "runs a wicket costs at 60 for 2 after 10 overs"],
+  ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("");
+  $("sample").textContent = "Sample: " + D.sample.text;
+
+  // ---------- 1. curve
+  const dl = (b, w) => (b <= 0 || w >= 10) ? 0 : D.dl.Z0[w] * (1 - Math.exp(-D.dl.b_per_over[w] * b / 6));
+  const full = LAB.full(c), cols = ["var(--pitch)", "var(--amber)", "var(--seam)", "var(--ink)"];
+  const ser = [];
+  [0, 2, 4, 6].forEach((w, i) => {
+    const pts = [], q = [];
+    for (let u = 0; u <= 50; u++) { pts.push([u, 100 * LAB.R(c, u * 6, w) / full]); q.push([u, dl(u * 6, w)]); }
+    ser.push({ pts, color: cols[i] }, { pts: q, color: cols[i], dash: "4 3", w: 1.5 });
+  });
+  LAB.line($("curvechart"), ser, { title: "Resource remaining by overs left", x0: 0, x1: 50, y0: 0, y1: 100, xticks: [0, 10, 20, 30, 40, 50], yticks: [0, 25, 50, 75, 100], yfmt: v => v + "%", xlab: "overs left" });
+  const r20 = D.resource_table.find(r => r[0] === 20)[1], ch = D.curve_holdout, wst = D.resource_worst;
+  $("curveintro").textContent = `Fitted on first innings of ${D.fit.clean_matches} ODIs: a full innings is worth ${LAB.f(D.fit.R_full, 0)} runs on average. With 20 overs left and no wicket down, our fit says ${r20[0][0]}% of the innings' runs are still to come, against ${r20[0][1]}% in the DL Standard shape; with 5 down it is ${r20[5][0]}% against ${r20[5][1]}%. ${r20[0][0] > r20[0][1] && r20[5][0] < r20[5][1] ? "So in this sample, a side with wickets in hand has more of its innings still to come than the DL shape says, and lost wickets cost more of it. " : ""}On ${ch.test_matches} held-out matches our curve predicted runs still to come with an error (RMSE) of ${LAB.f(ch.ours_par, 1)} runs against ${LAB.f(ch.dl_par, 1)} for the DL shape scaled to the same par.`;
+  $("restab").innerHTML = `<table><thead><tr><th>Overs left</th>${[...Array(10).keys()].map(w => `<th>${w} down</th>`).join("")}</tr></thead><tbody>${D.resource_table.map(([ov, cells]) => `<tr><td>${ov}</td>${cells.map(([a, b, n]) => `<td${n < D.dl.min_cell_compare ? ' style="opacity:.55"' : ""} title="${n} first innings passed through this state">${LAB.f(a, 1)} / ${LAB.f(b, 1)}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  $("resnote").textContent = `Faded cells: fewer than ${D.dl.min_cell_compare} first innings passed through that state, so the comparison there is the curve's extrapolation, not data. In the ${wst.cells_judged} cells with data (5 to 40 overs left), ${wst.cells_within_5} are within 5 points of DL; the largest gap is ${wst.gap} points (${wst.overs_left} overs left, ${wst.wkts} down).`;
+
+  // ---------- 2. ball value
+  function ball() {
+    const par = +$("bpar").value, lam = LAB.solveLambda(c, par), w = Math.min(9, Math.max(0, +$("bw").value));
+    const b = Math.max(1, 300 - 6 * Math.max(0, +$("bov").value));
+    const R0 = LAB.R(c, b, w, lam), Rd = LAB.R(c, b - 1, w, lam), Rw = LAB.R(c, b - 1, w + 1, lam);
+    $("bout").innerHTML = [[LAB.f(R0, 1), "runs still expected"], [LAB.sg(Rd - R0, 2), "a dot ball"], [LAB.sg(4 + Rd - R0, 2), "a four"], [LAB.sg(Rw - R0, 1), "a wicket (no run)"]]
+      .map(([a, s]) => `<div class="stat"><b>${a}</b><span>${s}</span></div>`).join("");
+    $("bexplain").textContent = `At ${$("bov").value} overs, ${w} down, par ${par} (λ = ${lam.toFixed(3)}).` + (t20w !== null ? ` For comparison, T20 Lab puts a wicket at 60 for 2 after 6 overs of a T20 (par 180) at ${LAB.sg(t20w, 1)} runs` + (R0 - Rw > Math.abs(t20w) ? ": here there is more innings left for a wicket to cost." : ".") : "");
+  }
+  let t20w = null;
+  try { t20w = (await LAB.load("validation_pro.json")).impact.example_par180.wicket; } catch (e) { t20w = null; }
+  ["bpar", "bov", "bw"].forEach(id => $(id).addEventListener("input", ball));
+  $("bpar").value = Math.round(D.examples.par); ball();
+
+  // ---------- 3. win probability
+  function calc() {
+    const inn = +$("inn").value; $("tgtl").style.display = inn === 2 ? "" : "none";
+    const par = +$("par").value, lam = LAB.solveLambda(c, par), S = +$("S").value, w = Math.min(+$("w").value, 10);
+    const b = Math.max(0, 300 - 6 * +$("ov").value), T = +$("tgt").value;
+    const P = (S_, b_, w_) => inn === 1 ? LAB.wp1(c, S_, b_, w_, lam, wp.n1, wp.a1) : LAB.wp2(c, T - S_, b_, w_, lam, wp.n2, wp.a2);
+    const p = P(S, b, w), pw = P(S, b - 1, w + 1), p4 = P(S + 4, b - 1, w), R = LAB.R(c, b, w, lam);
+    $("out").innerHTML = [[LAB.pct(p, 1), `win probability, ${inn === 1 ? "side batting first" : "chasing side"}`], [LAB.f(R, 0), "runs still expected (curve)"],
+      [LAB.sg(100 * (p4 - p), 1) + " / " + LAB.sg(100 * (pw - p), 1), "points: four / wicket next ball"]].map(([a, s]) => `<div class="stat"><b>${a}</b><span>${s}</span></div>`).join("");
+    $("explain").textContent = inn === 1 ? `Projected total ${(S + R).toFixed(0)} against an expected ${LAB.full(c, lam).toFixed(0)} (λ = ${lam.toFixed(3)}).`
+      : `${T - S} needed from ${b} balls with ${10 - w} wickets in hand; the curve says ${R.toFixed(0)} runs of resources remain (λ = ${lam.toFixed(3)}).`;
+  }
+  ["inn", "par", "tgt", "S", "ov", "w"].forEach(id => $(id).addEventListener("input", calc));
+  $("par").value = Math.round(D.examples.par); $("tgt").value = Math.round(D.examples.par) + 1;
+  calc();
+  $("calintro").textContent = `Fitted on ${ho.train_matches} ODIs, scored ball by ball on ${ho.test_matches} it never saw (random 30% split by match). Fitted exponents: n = ${ho.inn1.n_fitted} (1st innings) and ${ho.inn2.n_fitted} (chase)${Math.abs(ho.inn1.n_fitted - 6) <= 1 && Math.abs(ho.inn2.n_fitted - 6) <= 1 ? ", close to the primer's T20 value of 6" : "; the primer's T20 value is 6"}. Dots are 15 equal-sized groups of balls. A logistic regression on the same scoreboard is the baseline to beat.`;
+  function rel(k) {
+    const d = ho[k];
+    LAB.line($("rel"), [{ pts: d.platt.bins.map(b => [b[0], b[1]]), color: "var(--pitch)", dots: true, r: 4 }, { pts: d.n6.bins.map(b => [b[0], b[1]]), color: "var(--amber)", dots: true, r: 3 }],
+      { title: "Reliability diagram", x0: 0, x1: 1, y0: 0, y1: 1, diag: true, xticks: [0, .25, .5, .75, 1], yticks: [0, .25, .5, .75, 1], xfmt: v => (v * 100).toFixed(0) + "%", yfmt: v => (v * 100).toFixed(0) + "%", xlab: "predicted" });
+    $("c1").setAttribute("aria-pressed", k === "inn1"); $("c2").setAttribute("aria-pressed", k === "inn2");
+  }
+  $("c1").onclick = () => rel("inn1"); $("c2").onclick = () => rel("inn2"); rel("inn1");
+  const rows = [];
+  for (const k of ["inn1", "inn2"]) for (const [m, lab] of [["platt", "ODI Lab"], ["n6", "primer form, n = 6"], ["logistic", "logistic baseline"]])
+    rows.push({ inn: k === "inn1" ? "1st" : "2nd", m: lab, balls: ho[k].balls, brier: ho[k][m].brier, auc: ho[k][m].auc, ece: ho[k][m].ece, nul: ho[k].brier_null });
+  rows.push({ inn: "both", m: "ODI Lab", balls: ho.inn1.balls + ho.inn2.balls, brier: ho.both_platt.brier, auc: ho.both_platt.auc, ece: ho.both_platt.ece, nul: ho.both_null_brier });
+  rows.push({ inn: "both", m: "logistic baseline", balls: ho.inn1.balls + ho.inn2.balls, brier: ho.both_logistic.brier, auc: ho.both_logistic.auc, ece: ho.both_logistic.ece, nul: ho.both_null_brier });
+  LAB.table($("caltab"), [{ k: "inn", t: "Inns" }, { k: "m", t: "Model" }, { k: "balls", t: "Balls" }, { k: "brier", t: "Brier", d: 4 }, { k: "nul", t: "Brier (base rate)", d: 4 }, { k: "auc", t: "AUC", d: 3 }, { k: "ece", t: "ECE", d: 4 }], rows);
+
+  // ---------- 4. par
+  const ph = D.par_holdout;
+  LAB.bars($("parbars"), [["Shrunk par", ph.total.shrunk], ["Raw ground-year", ph.total.raw_bucket], ["Year mean", ph.total.year_mean], ["One global mean", ph.total.global]].map(([l, v]) => ({ label: l, v })),
+    { allPos: true, fmt: v => v.toFixed(1), title: "Held-out error of first-innings par, runs" });
+  LAB.table($("partab"), [{ k: "t", t: "Target" }, { k: "s", t: "Shrunk", d: 1 }, { k: "r", t: "Raw", d: 1 }, { k: "y", t: "Year mean", d: 1 }, { k: "g", t: "Global", d: 1 }, { k: "ci", t: "Raw − shrunk (95%)" }],
+    [["total", "Total"], ["P1", PH.P1], ["P2", PH.P2], ["P3", PH.P3]].map(([k, t]) => ({ t, s: ph[k].shrunk, r: ph[k].raw_bucket, y: ph[k].year_mean, g: ph[k].global, ci: `${ph[k].raw_minus_shrunk_ci95[0]} to ${ph[k].raw_minus_shrunk_ci95[1]}` })));
+  $("parnote").textContent = `Root-mean-square error in runs predicting ${ph.test} held-out first innings (fitted on ${ph.train}). ${ph.total.raw_minus_shrunk_ci95[0] > 0 ? "Shrinkage beats trusting the raw ground-year average" : "Shrinkage does not clearly beat the raw ground-year average"}${ph.total.shrunk >= ph.total.year_mean ? ", but it does no better than one average for the year" : ""}. In ODIs, ${ph.total.test_unseen_venue_year} of ${ph.test} test matches were at a ground with no other match that year, and the spread of totals (about ${Math.round(ph.total.global)} runs) is mostly match-to-match.`;
+  LAB.table($("yeartab"), [{ k: "y", t: "Year" }, { k: "n", t: "ODIs" }, { k: "t", t: "Par total", d: 1 }, { k: "p1", t: "1-10", d: 1 }, { k: "p2", t: "11-40", d: 1 }, { k: "p3", t: "41-50", d: 1 }],
+    D.par_by_year.map(r => ({ y: r[0], n: r[1], t: r[2], p1: r[3], p2: r[4], p3: r[5] })));
+
+  // ---------- 5. venue
+  const V = D.venue, bp = V.buffalo_park;
+  $("venueintro").textContent = `n is small: ${bp.n} clean full-member ODIs at Buffalo Park in Cricsheet (${bp.matches[0][0].slice(0, 4)} to ${bp.matches[bp.matches.length - 1][0].slice(0, 4)}), only ${bp.since_rules_n} of them since July 2015. Each first-innings total is compared with that year's average across all grounds, and the ground's mean difference is shrunk with k = ${V.k} matches estimated from all ${V.venues} venues.`;
+  $("vstats").innerHTML = [[LAB.sg(bp.raw_effect, 1), "raw: runs v year average"], [LAB.sg(bp.shrunk_effect, 1), `shrunk (weight ${bp.weight})`], [LAB.f(bp.tree_par_2026[0], 0), "2026 par from the year tree (no 2026 match here yet)"]]
+    .map(([a, s]) => `<div class="stat"><b>${a}</b><span>${s}</span></div>`).join("");
+  LAB.table($("vtab"), [{ k: "d", t: "Date" }, { k: "m", t: "Match" }, { k: "t", t: "1st-inns total" }, { k: "y", t: "Year average", d: 1 }, { k: "x", t: "Difference", sign: true, d: 1 }],
+    bp.matches.map(r => ({ d: r[0], m: r[1], t: r[2], y: r[3], x: r[2] - r[3] })));
+  LAB.table($("vphase"), [{ k: "p", t: "Phase" }, { k: "a", t: "Buffalo Park rpo", d: 2 }, { k: "b", t: "Same years, other grounds", d: 2 }, { k: "n", t: "Balls here" }],
+    ["P1", "P2", "P3"].map(p => ({ p: PH[p], a: bp.phase_rpo[p][0], b: bp.phase_rpo[p][1], n: bp.phase_rpo[p][2] })));
+  const vh = V.holdout;
+  $("vnote").textContent = `Across all grounds (${vh.train} train / ${vh.test} held-out ODIs), the year average alone had a held-out error of ${vh.rmse_year_only} runs; adding a shrunk ground effect gave ${vh.rmse_year_plus_shrunk_venue} (95% interval of the gain ${vh.year_minus_shrunk_ci95[0]} to ${vh.year_minus_shrunk_ci95[1]}) and adding a raw ground effect gave ${vh.rmse_year_plus_raw_venue}. Clean matches only, so the count is below the dossier's full list of ODIs here. The scores at Buffalo Park range from ${Math.min(...bp.matches.map(m => m[2]))} to ${Math.max(...bp.matches.map(m => m[2]))}` + (Math.abs(bp.shrunk_effect) < 10 ? ": on this record it reads as a par ground, with a wide margin." : ": read the effect with a wide margin.");
+
+  // ---------- 6. teams
+  const T = D.teams, names = Object.keys(T.teams);
+  $("teamintro").textContent = `Descriptive only: every full-member ODI of each side since ${T.window_from} in Cricsheet (${T.matches_used} matches used; ${Object.entries(T.excluded).map(([k, v]) => `${v} ${k}`).join(", ") || "none"} left out; clean matches between full members only, so counts can be lower than the dossier's). Par for each phase is the shrunk rate for the same innings (setting or chasing) at that ground and year, fitted with that match left out, so a side's own score never sets its own yardstick. A chase's tempo still depends on its target, so read the chase rows with that in mind. Opponents and grounds differ, so this is not a head-to-head comparison and not a forecast.`;
+  const cell = (v, good, d = 2) => { if (v === null || v === undefined) return "<td>–</td>"; const cl = v === 0 ? "" : ((v > 0) === good ? "pos" : "neg"); return `<td class="${cl}">${LAB.sg(v, d)}</td>`; };
+  function team(t) {
+    const x = T.teams[t];
+    $("tsel").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b.dataset.t === t));
+    const head = side => `<thead><tr><th>Phase</th><th>Inns</th><th>Balls</th><th>Runs/over</th><th>Par</th><th>Diff</th><th>Runs v par / inns</th><th>Wkts / 10 ov</th><th>Par</th><th>Impact / 1st inns (n)</th></tr></thead>`;
+    const body = (rows, bat) => `<tbody>${rows.map(r => `<tr><td>${PH[r.phase]}</td><td>${r.inns}</td><td>${r.balls}</td><td>${LAB.f(r.rpo, 2)}</td><td>${LAB.f(r.par_rpo, 2)}</td>${cell(r.diff_rpo, bat)}${cell(r.runs_vs_par_per_inns, bat, 1)}<td>${LAB.f(r.wk10, 2)}</td><td>${LAB.f(r.par_wk10, 2)}</td>${cell(r.impact_per_1st_inns, bat, 1).replace("</td>", ` (${r.impact_n})</td>`)}</tr>`).join("")}</tbody>`;
+    $("tbat").innerHTML = `<table>${head()}${body(x.bat, true)}</table>`;
+    $("tbowl").innerHTML = `<table>${head()}${body(x.bowl, false)}</table>`;
+    const f = x.first_innings;
+    $("tnote").textContent = `${t}: ${x.matches} ODIs. Batting first (${f.bat.n} innings) the total averaged ${LAB.sg(f.bat.total_minus_par, 1)} runs against par; bowling first (${f.bowl.n} innings) the opposition averaged ${LAB.sg(f.bowl.total_minus_par, 1)}. Impact is the first innings only: runs in the phase plus the change in the curve, so wickets lost cost runs; in the bowling table it is the batting side's Impact, so negative is good for the bowlers. Green is good for ${t} in both tables. Samples are small: read the n.`;
+  }
+  $("tsel").innerHTML = names.map(t => `<button data-t="${t}">${t}</button>`).join("");
+  $("tsel").querySelectorAll("button").forEach(b => b.onclick = () => team(b.dataset.t));
+  team(names[0]);
+  $("vsum").innerHTML = Object.entries(D.summary).map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+})();
+</script>
+</body>
+</html>
